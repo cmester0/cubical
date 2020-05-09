@@ -18,16 +18,16 @@ open import Cubical.Codata.M.AsLimit.Coalg
 
 -- Delay monad defined as an M-type
 delay-S : (R : Type₀) -> Container ℓ-zero
-delay-S R = (Unit ⊎ R) , λ { (inr _) -> ⊥ ; (inl tt) -> Unit }
+delay-S R = (R ⊎ Unit) , λ { (inl _) -> ⊥ ; (inr tt) -> Unit }
 
 delay : (R : Type₀) -> Type₀
 delay R = M (delay-S R)
 
 delay-ret : {R : Type₀} -> R -> delay R
-delay-ret r = in-fun (inr r , λ ())
+delay-ret r = in-fun (inl r , λ ())
 
 delay-tau : {R : Type₀} -> delay R -> delay R
-delay-tau S = in-fun (inl tt , λ x → S)
+delay-tau S = in-fun (inr tt , λ x → S)
 
 -- Bottom element raised
 data ⊥₁ : Type₁ where

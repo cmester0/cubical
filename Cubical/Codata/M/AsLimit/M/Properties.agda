@@ -27,8 +27,14 @@ open import Cubical.Codata.M.AsLimit.Container
 
 open Iso
 
+in-inverse-out-x : ∀ {ℓ} {S : Container ℓ} -> ∀ x → in-fun (out-fun {S = S} x) ≡ x
+in-inverse-out-x {S = S} = rightInv {A = P₀ S (M S)} {B = M S} (shift-iso S)
+
 in-inverse-out : ∀ {ℓ} {S : Container ℓ} -> (in-fun ∘ out-fun {S = S}) ≡ idfun (M S)
 in-inverse-out {S = S} = funExt (rightInv {A = P₀ S (M S)} {B = M S} (shift-iso S))
+
+out-inverse-in-x : ∀ {ℓ} {S : Container ℓ} -> ∀ x → out-fun {S = S} (in-fun {S = S} x) ≡ x
+out-inverse-in-x {S = S} = leftInv {A = P₀ S (M S)} {B = M S} (shift-iso S)
 
 out-inverse-in : ∀ {ℓ} {S : Container ℓ} -> (out-fun {S = S} ∘ in-fun {S = S}) ≡ idfun (P₀ S (M S))
 out-inverse-in {S = S} = funExt (leftInv {A = P₀ S (M S)} {B = M S} (shift-iso S))
@@ -49,3 +55,24 @@ in-inj-x {ℓ} {S = S} {x = x} {y} = iso→fun-Injection-Path-x (shift-iso S)
 
 out-inj-x : ∀ {ℓ} {S : Container ℓ} -> ∀ {x y : M S} -> (out-fun x ≡ out-fun y) ≡ (x ≡ y)
 out-inj-x {ℓ} {S = S} {x = x} {y} = iso→inv-Injection-Path-x (shift-iso S)
+
+-- Functions that help when defining functions out of M-types
+
+M-coinduction :
+  ∀ {ℓ ℓ'} {S : Container ℓ}
+  → (k : M S → Type ℓ')
+  → ((x : P₀ S (M S)) → k (in-fun x))
+  ---------------
+  → ((x : M S) → (k x))
+M-coinduction k x x₁ =
+  transport (λ i → k (in-inverse-out i x₁))
+  (case out-fun x₁ return (λ x₂ → k (in-fun x₂)) of x)
+
+M-coinduction-const :
+  ∀ {ℓ ℓ'} {S : Container ℓ}
+  → (k : Set ℓ')
+  → ((x : P₀ S (M S)) → k)
+  ---------------
+  → ((x : M S) → k)
+M-coinduction-const k x x₁ =
+  case out-fun x₁ return (λ x₂ → k) of x

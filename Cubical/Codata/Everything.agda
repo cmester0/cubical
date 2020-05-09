@@ -29,3 +29,9 @@ open import Cubical.Codata.M.AsLimit.helper
 open import Cubical.Codata.M.AsLimit.Container
 open import Cubical.Codata.M.AsLimit.itree
 open import Cubical.Codata.M.AsLimit.stream
+
+{-
+-- Partiality monad
+-}
+
+open import Cubical.Codata.M.AsLimit.partiality-monad
