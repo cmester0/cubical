@@ -31,6 +31,9 @@ isEmbedding f = ∀ w x → isEquiv {A = w ≡ x} (cong f)
 isEmbeddingIsProp : isProp (isEmbedding f)
 isEmbeddingIsProp {f = f} = isPropΠ2 λ _ _ → isPropIsEquiv (cong f)
 
+isInjective : (A → B) → Type _
+isInjective f = ∀{w x} → f w ≡ f x → w ≡ x
+
 -- If A and B are h-sets, then injective functions between
 -- them are embeddings.
 --
@@ -39,7 +42,7 @@ isEmbeddingIsProp {f = f} = isPropΠ2 λ _ _ → isPropIsEquiv (cong f)
 injEmbedding
   : {f : A → B}
   → isSet A → isSet B
-  → (∀{w x} → f w ≡ f x → w ≡ x)
+  → isInjective f
   → isEmbedding f
 injEmbedding {f = f} iSA iSB inj w x
   = isoToIsEquiv (iso (cong f) inj sect retr)

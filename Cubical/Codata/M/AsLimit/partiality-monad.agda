@@ -409,8 +409,7 @@ abstract
   ↓⇔∥↓∥ : ∀ {A} → isSet A → ∀ x {y : A} → (x ↓seq y → ∥ x ↓seq y ∥) × (∥ x ↓seq y ∥ → x ↓seq y)
   ↓⇔∥↓∥ A-set x {y} =
     (∣_∣) ,
-    let temp = Cubical.HITs.PropositionalTruncation.rec (⇓′-propositional A-set x {y = y}) (⇓→⇓′ x) in
-    λ x₁ → let temp' = temp x₁ in ⇓′→⇓ x temp'
+    ⇓′→⇓ x ∘ Cubical.HITs.PropositionalTruncation.rec (⇓′-propositional A-set x {y = y}) (⇓→⇓′ x)
 
   Maybe→⊥-mono : ∀ {A : Type₀} {x y : A ⊎ Unit} → LE x y → (Maybe→⊥ x) ⊑ (Maybe→⊥ y)
   Maybe→⊥-mono {x = x} {y} (inl p) = subst (λ a → Maybe→⊥ x ⊑ Maybe→⊥ a) p (⊑-refl (Maybe→⊥ x))
@@ -468,147 +467,78 @@ abstract
   Seq/∼→⊥ : ∀ {A} → isSet A → (Seq A / _∼seq_) → < A >⊥
   Seq/∼→⊥ {A} A-set = recc Seq→⊥ (λ x y → Seq→⊥-≈→≡ A-set x y) ⊥-isSet
 
+  private -- useful property
+    postulate -- TODO
+      η⊑⊔ : ∀ {A : Set} s q (r : A) → η r ⊑ ⊔ (s , q) → ∥ Σ[ n ∈ ℕ ] η r ⊑ s n ∥
+
+  ⊑-refl-constr : ∀ {A : Set} {x y : < A >⊥} → x ≡ y → x ⊑ y
+  ⊑-refl-constr {x = x} p = transport (λ i → x ⊑ p i) (⊑-refl x)
+
   -- weakly effective?
   Seq→⊥-isInjective : ∀ {A} → (A-set : isSet A) → (s t : Seq A) → Seq→⊥ s ≡ Seq→⊥ t → s ∼seq t
   Seq→⊥-isInjective {A} A-set s t x =
-    sfad s t x ,
-    sfad t s (sym x) -- by symmetry
+    lemma s t (⊑-refl-constr x) ,
+    lemma t s (⊑-refl-constr (sym x))
     where
-      asfd : ∀ {A : Set} (y : < A >⊥) (r : A) → Iso (η r ⊑ y) (y ≡ η r)
-      asfd = {!!}
-
-    -- data <_>⊥ {ℓ} (A : Type ℓ) : Type ℓ where
-    --   never  : < A >⊥
-    --   η      : A → < A >⊥
-    --   ⊔      : Increasing-sequence A → < A >⊥
-    --   α      : ∀ {x y} → x ⊑ y → y ⊑ x → x ≡ y
-    --   ⊥-isSet : isSet (< A >⊥)
-
-      asdf'2 : ∀ {A : Set} s q (r : A) → η r ⊑ ⊔ (s , q) → ∥ Σ[ n ∈ ℕ ] η r ⊑ s n ∥
-      asdf'2 = {!!}
-
-      Maybe→⊥-isInjective : ∀ (s t : A ⊎ Unit) → (Maybe→⊥ s ≡ Maybe→⊥ t) ≡ (s ≡ t)
-      Maybe→⊥-isInjective = {!!}
-
-      sfad : ∀ s t → Seq→⊥ s ≡ Seq→⊥ t → (a : A) → ∥ s ↓seq a ∥ → ∥ t ↓seq a ∥
-      sfad s t x = 
-           (λ a x₁ →
-             let (n , k) = proj₂ (↓⇔∥↓∥ A-set s) x₁ in
-             let temp'1 : η a ⊑ Seq→⊥ s
-                 temp'1 = subst (λ x₂ → Maybe→⊥ x₂ ⊑ ⊔ ((Maybe→⊥ ∘ fst s) , (Maybe→⊥-mono ∘ snd s))) k (upper-bound ((Maybe→⊥ ∘ fst s) , (Maybe→⊥-mono ∘ snd s)) n)
-             in
-             let temp : Seq→⊥ s ≡ η a
-                 temp = Iso.fun (asfd (Seq→⊥ s) a) temp'1
-             in
-             let temp'3 : Seq→⊥ t ≡ η a
-                 temp'3 = subst (λ x₁ → x₁ ≡ η a) x temp
-             in
-             let temp'10 : η a ⊑ Seq→⊥ t
-                 temp'10 = Iso.inv (asfd (Seq→⊥ t) a) temp'3
-             in
-             -- let temp'5 : ∥ (Σ[ n ∈ ℕ ] η a ⊑ Maybe→⊥ (fst s n)) ∥
-             --     temp'5 = asdf'2 (Maybe→⊥ ∘ fst s) (Maybe→⊥-mono ∘ snd s) a temp'1
-             -- in
-             let temp'6 : ∥ (Σ[ n ∈ ℕ ] η a ⊑ Maybe→⊥ (fst t n)) ∥
-                 temp'6 = asdf'2 (Maybe→⊥ ∘ fst t) (Maybe→⊥-mono ∘ snd t) a temp'10
-             in
-             -- use Propositional truncation elim ? 
-             let temp'4 : ∥ (Σ[ n ∈ ℕ ] fst t n ≡ inl a) ∥
-                 temp'4 =
-                   transport
-                   (∥ (Σ[ n ∈ ℕ ] η a ⊑ Maybe→⊥ (fst t n)) ∥
-                      ≡⟨ (λ i → ∥ (Σ[ n ∈ ℕ ] (isoToPath (asfd (Maybe→⊥ (fst t n)) a) i)) ∥) ⟩
-                   ∥ (Σ[ n ∈ ℕ ] Maybe→⊥ (fst t n) ≡ η a) ∥
-                     ≡⟨ refl ⟩
-                   ∥ (Σ[ n ∈ ℕ ] Maybe→⊥ (fst t n) ≡ Maybe→⊥ (inl a)) ∥
-                     ≡⟨ (λ i → ∥ Σ[ n ∈ ℕ ] (Maybe→⊥-isInjective (fst t n) (inl a) i) ∥) ⟩
-                   ∥ (Σ[ n ∈ ℕ ] fst t n ≡ inl a) ∥ ∎)
-                   temp'6
-             in
-           temp'4)
-
--- - ⊥→⊥ A-set is injective (assuming propositional extensionality).
--- propositional extensionality is true in cubical agda!
--- ⊥→⊥-injective :
---   (A-set : Is-set A) → Propositional-extensionality a →
---   Injective (⊥→⊥ A-set)
--- ⊥→⊥-injective A-set prop-ext {x} {y} =
---   Quotient.elim-Prop
---     (λ x → ⊥→⊥ A-set x ≡ ⊥→⊥ A-set y → x ≡ y)
---     (λ x → Quotient.elim-Prop
---        (λ y → Delay→⊥ x ≡ ⊥→⊥ A-set y → Quotient.[ x ] ≡ y)
---        (λ y → []-respects-relation ∘
---               Delay→⊥-injective A-set prop-ext x y)
---        (λ _ → Π-closure ext 1 λ _ →
---               /-is-set _ _)
---        y)
---     (λ _ → Π-closure ext 1 λ _ →
---            /-is-set _ _)
---     x
-
-  agsfdknhgfsa = elimProp {!!} {!!} {!!}
-    -- let temp'5 = equivFun (setQuotUniversal {A = Seq A} {R = _∼seq_} {!!}) in -- λ g →  (λ a → g [ a ]) , λ a b r i → g (eq/ a b r i)
+      postulate
+        ⇓≃now⊑ : (x : Seq A) {y : A} → Iso (x ↓seq y) (η y ⊑ Seq→⊥ x)
     
-  -- effective ?
-  -- this is not true? , we only get [ x ] ≡ [ y ] , eq by set-truncation ??
-  weak-bisim : ∀ {A} (x y : Seq A) → x ∼seq y → x ≡ y
-  weak-bisim x y z = {!!}
-  
-  reverse : ∀ {A} → isSet (Seq A) → Seq A / _∼seq_ → Seq A
-  reverse {A} seqA-set = recc (idfun (Seq A)) weak-bisim seqA-set
+      lemma : (x y : Seq A) → Seq→⊥ x ⊑ Seq→⊥ y → (∀ a → ∥ x ↓seq a ∥ → ∥ y ↓seq a ∥)
+      lemma x y p a q =
+        let temp'1 : ∥ x ↓seq a ∥
+            temp'1 = q in
+        let temp'2 : x ↓seq a
+            temp'2 = proj₂ (↓⇔∥↓∥ A-set x) temp'1 in
+        let temp'3 : η a ⊑ Seq→⊥ x
+            temp'3 = Iso.fun (⇓≃now⊑ x) temp'2 in
+        let temp'4 : η a ⊑ Seq→⊥ y
+            temp'4 = ⊑-trans temp'3 p in
+        let temp'5 : y ↓seq a
+            temp'5 = Iso.inv (⇓≃now⊑ y) temp'4 in
+        proj₁ (↓⇔∥↓∥ A-set y) temp'5
 
-  kag-prop : ∀ {ℓ} {A B : Set ℓ} → isProp A → isProp B → isProp (A ⊎ B)
-  kag-prop a b (inl x) (inl y) = cong inl (a x y)
-  kag-prop a b (inr x) (inl y) = {!!}
-  kag-prop a b (inl x) (inr y) = {!!}
-  kag-prop a b (inr x) (inr y) = cong inr (b x y)
+      -- Maybe→⊥-isEmbedding : isEmbedding Maybe→⊥
+      -- Maybe→⊥-isEmbedding = {!!}
 
-  isOfHLevel⊎ : ∀ {ℓ} {A B : Set ℓ} n → isOfHLevel (suc n) A → isOfHLevel (suc n) B → isOfHLevel (suc n) (A ⊎ B)
-  isOfHLevel⊎ 0 = kag-prop
-  isOfHLevel⊎ (suc n) h f g = {!!}
-    -- subst (isOfHLevel (suc n)) funExtPath (isOfHLevelΠ (suc n) λ x → h x (f x) (g x))
+      -- Maybe→⊥-isInjective : ∀ (s t : A ⊎ Unit) → (Maybe→⊥ s ≡ Maybe→⊥ t) ≡ (s ≡ t)
+      -- Maybe→⊥-isInjective s t = isEmbedding→Injection Maybe→⊥ {!!} tt
 
+      -- sfad-helper :
+      --   ∀ (t : Seq A) a
+      --   → ∥ (Σ[ n ∈ ℕ ] η a ⊑ Maybe→⊥ (fst t n)) ∥
+      --   ≡ ∥ (Σ[ n ∈ ℕ ] fst t n ≡ inl a) ∥
+      -- sfad-helper t a =
+      --   ∥ (Σ[ n ∈ ℕ ] η a ⊑ Maybe→⊥ (fst t n)) ∥
+      --      ≡⟨ cong (λ k → ∥ (Σ[ n ∈ ℕ ] k n) ∥) (funExt λ n → isoToPath (η⊑x-x≡η-Iso (Maybe→⊥ (fst t n)) a)) ⟩
+      --   ∥ (Σ[ n ∈ ℕ ] Maybe→⊥ (fst t n) ≡ η a) ∥
+      --     ≡⟨ refl ⟩
+      --   ∥ (Σ[ n ∈ ℕ ] Maybe→⊥ (fst t n) ≡ Maybe→⊥ (inl a)) ∥
+      --     ≡⟨ cong (λ k → ∥ Σ[ n ∈ ℕ ] k n ∥) (funExt λ n → Maybe→⊥-isInjective (fst t n) (inl a)) ⟩
+      --   ∥ (Σ[ n ∈ ℕ ] fst t n ≡ inl a) ∥ ∎
 
-  kag : ∀ {A B} → isSet A → isSet B → isSet (A ⊎ B)
-  kag a b (inl x) (inl y) = λ z w →
-    let temp'1 = isEmbedding→Injection inl isEmbedding-inl {f = λ _ → x} {g = λ _ → y} tt in
-    let temp'2 = transport temp'1 z in
-    let temp'3 = transport temp'1 w in
-    let temp = a x y temp'2 temp'3 in {!!}
+      -- sfad : ∀ s t → Seq→⊥ s ≡ Seq→⊥ t → (a : A) → ∥ s ↓seq a ∥ → ∥ t ↓seq a ∥
+      -- sfad s t x a q =
+      --   let (n , k) = proj₂ (↓⇔∥↓∥ A-set s) q in
+      --   -- -- use Propositional truncation elim ?
+      --   transport
+      --     (sfad-helper t a)
+      --     (η⊑⊔ (Maybe→⊥ ∘ fst t) (Maybe→⊥-mono ∘ snd t) a (Iso.inv (η⊑x-x≡η-Iso (Seq→⊥ t) a) (subst (λ x₁ → x₁ ≡ η a) x (Iso.fun (η⊑x-x≡η-Iso (Seq→⊥ s) a) (subst (λ x₂ → Maybe→⊥ x₂ ⊑ ⊔ ((Maybe→⊥ ∘ fst s) , (Maybe→⊥-mono ∘ snd s))) k (upper-bound ((Maybe→⊥ ∘ fst s) , (Maybe→⊥-mono ∘ snd s)) n))))))
 
-  -- isEmbedding→Injection
-  -- isEmbedding-inl
-
-  sfad : ∀ {A} → isSet (Seq A)
-  sfad = isSetΣ (isSetΠ λ x → {!!}) {!!}
+  Seq/∼→⊥-isInjective : ∀ {A} → (A-set : isSet A) → isInjective (Seq/∼→⊥ A-set)
+  Seq/∼→⊥-isInjective {A} A-set {x} {y} =
+    elimProp
+      {B = λ x → Seq/∼→⊥ A-set x ≡ Seq/∼→⊥ A-set y → x ≡ y}
+      (λ x → isPropΠ λ _ x' y' → squash/ x y x' y') 
+      (λ x →
+        elimProp
+          {B = λ y → Seq→⊥ x ≡ Seq/∼→⊥ A-set y → [ x ] ≡ y}
+          (λ y → isPropΠ λ _ x' y' → squash/ [ x ] y x' y')
+          (λ y → eq/ x y ∘ (Seq→⊥-isInjective A-set x y))
+          y)
+      x
 
   Seq/∼→⊥-isEmbedding : ∀ {A} → (A-set : isSet A) → isEmbedding (Seq/∼→⊥ A-set)
-  Seq/∼→⊥-isEmbedding {A} A-set = injEmbedding squash/ ⊥-isSet λ {x w} z →
-    let temp = rec→Set {!!} fst {!!} ([]surjective x) in -- (λ x₁ → x₁ .fst)
-    {!!}
-    -- let temp : ∀ (s t : Seq A) → Seq→⊥ s ≡ Seq→⊥ t → s ≡ t
-    --     temp s t x = weak-bisim s t (Seq→⊥-isInjective A-set s t x)
-    -- in
-    -- let temp'1 : ∥ Σ[ a ∈ (Seq A) ] [ a ] ≡ x ∥
-    --     temp'1 = []surjective x in
-    -- let temp'2 : ∥ Σ[ a ∈ (Seq A) ] [ a ] ≡ w ∥
-    --     temp'2 = []surjective w in
-    -- let temp'5 : isProp (Σ[ a ∈ (Seq A) ] [ a ] ≡ x)
-    --     temp'5 = isPropΣ {!!} {!!} in
-    -- let temp'8 : isProp (Σ[ a ∈ (Seq A) ] [ a ] ≡ w)
-    --     temp'8 = isPropΣ {!!} {!!} in
-    -- let temp'4 : Σ[ a ∈ (Seq A) ] [ a ] ≡ x
-    --     temp'4 = Cubical.HITs.PropositionalTruncation.rec temp'5 (idfun (Σ[ a ∈ (Seq A) ] [ a ] ≡ x)) temp'1 in
-    -- let temp'7 : Σ[ a ∈ (Seq A) ] [ a ] ≡ w
-    --     temp'7 = Cubical.HITs.PropositionalTruncation.rec temp'8 (idfun (Σ[ a ∈ (Seq A) ] [ a ] ≡ w)) temp'2 in
-    -- let temp'6 : temp'4 .fst ∼seq temp'7 .fst
-    --     temp'6 = Seq→⊥-isInjective A-set (temp'4 .fst) (temp'7 .fst) {!!} in
-    -- let temp'9 : [ temp'4 .fst ] ≡ [ temp'7 .fst ]
-    --     temp'9 = eq/ (temp'4 .fst) (temp'7 .fst) temp'6 in
-    -- transport (λ i → temp'4 .snd i ≡ temp'7 .snd i) temp'9
-    
-    -- recc {!!} (λ a b r → {!!}) {!!} w {!!}
-    -- elimProp {A = Seq A} {R = _∼seq_} (λ a b c → {!!}) {!!} {!!}
+  Seq/∼→⊥-isEmbedding {A} A-set = injEmbedding squash/ ⊥-isSet (Seq/∼→⊥-isInjective A-set)
 
 -- Axiom-of-countable-choice : (b : Level) → Set (lsuc b)
 -- Axiom-of-countable-choice b =
