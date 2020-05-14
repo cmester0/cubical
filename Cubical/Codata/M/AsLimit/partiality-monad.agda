@@ -229,13 +229,6 @@ _↓′_ : ∀ {A} → Seq A → A → Set _
 
 postulate
   ⇓′-propositional : ∀ {A} → isSet A → ∀ x {y : A} → isProp (x ↓′ y)
--- ⇓′-propositional A-set x@(f , _) {y} =
---   {!!} -- TODO
-  -- let temp : Σ[ m ∈ ℕ ] (isProp ((f m ≡ inl y) × (∀ n → (f n ≡ inr tt → ⊥) → m ≤ n)))
-  --     temp = {!!}
-  -- in
-  -- λ x' y' → transport Σ-split ({!!} , {!!})
-  -- where open import Cubical.Data.Nat.Order
 
 Other-singleton : {a : Level} {A : Set a} → A → Set a
 Other-singleton {A = A} x = Σ-syntax A λ y → x ≡ y
@@ -515,10 +508,6 @@ abstract
   Seq/∼→⊥-isEmbedding : ∀ {A} → (A-set : isSet A) → isEmbedding (Seq/∼→⊥ A-set)
   Seq/∼→⊥-isEmbedding {A} A-set = injEmbedding squash/ ⊥-isSet (Seq/∼→⊥-isInjective A-set)
 
--- Axiom-of-countable-choice : (b : Level) → Set (lsuc b)
--- Axiom-of-countable-choice b =
---   {B : ℕ → Set b} → (∀ x → ∥ B x ∥) → ∥ (∀ x → B x) ∥
-
   -- The axiom of countable choice, stated in a corresponding way.
 
   Axiom-of-countable-choice : (ℓ : Level) → Set (ℓ-suc ℓ)
@@ -540,13 +529,14 @@ abstract
     Maybe→⊥ s ∎
 
   private
-    rec⊥ :
-      ∀ {A} (P : < A >⊥ → Set)
-      → P never
-      → ((a : A) → P (η a))
-      → ((s : Σ[ s ∈ (ℕ → < A >⊥) ] ((n : ℕ) → s n ⊑ s (suc n))) → ((n : ℕ) → P (fst s n)) → P (⊔ s))
-      → (x : < A >⊥) → P x
-    rec⊥ = {!!}
+    postulate
+      -- see lemma 3 at (https://arxiv.org/pdf/1610.09254.pdf)
+      rec⊥ :
+        ∀ {A : Set} (P : < A >⊥ → Set)
+        → P never
+        → ((a : A) → P (η a))
+        → ((s : Σ[ s ∈ (ℕ → < A >⊥) ] ((n : ℕ) → s n ⊑ s (suc n))) → ((n : ℕ) → P (fst s n)) → P (⊔ s))
+        → (x : < A >⊥) → P x
 
   private
     postulate
@@ -574,49 +564,6 @@ abstract
             temp'4 = Cubical.HITs.PropositionalTruncation.map (uncurry (pointwise-equivalence→upper-bound-equivalence s)) temp'3 in
         temp'4
 
-  -- Seq→⊥-isSurjection : ∀ {A : Set} → (A-set : isSet A) → Axiom-of-countable-choice ℓ-zero → isSurjection (Seq→⊥ {A})
-  -- Seq→⊥-isSurjection {A} A-set _ never = ∣ ((λ _ → inr tt) , (λ _ → inl refl)) , const-seq (inr tt) ∣
-  -- Seq→⊥-isSurjection A-set _ (η a) = ∣ ((λ _ → inl a) , (λ _ → inl refl)) , const-seq (inl a) ∣
-  -- Seq→⊥-isSurjection {A} A-set cc (⊔ s) =
-    -- let p = λ n → Seq→⊥-isSurjection A-set cc (fst s n) in
-    -- let temp'1 : ∀ n → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ fst s n ∥
-    --     temp'1 = p in
-    -- let temp'2 : ∥ (∀ n → Σ[ x ∈ Seq A ] Seq→⊥ x ≡ fst s n) ∥
-    --     temp'2 = cc temp'1 in
-    -- let temp'3 : ∥ (Σ[ f ∈ (ℕ → Seq A) ] (∀ n → Seq→⊥ (f n) ≡ fst s n)) ∥
-    --     temp'3 = Cubical.HITs.PropositionalTruncation.map (λ x → (λ n → x n .fst) , (λ n → x n .snd)) temp'2 in
-    -- let temp'4 : ∥ (Σ[ x ∈ Seq A ] (Seq→⊥ x ≡ ⊔ s)) ∥
-    --     temp'4 = Cubical.HITs.PropositionalTruncation.map (uncurry (pointwise-equivalence→upper-bound-equivalence s)) temp'3 in
-    --     temp'4
-  -- Seq→⊥-isSurjection {A} A-set cc (α {x} {y} p q i) = -- these should follow from propositional trunction?
-  --   let temp : ∀ y → isProp (∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥)
-  --       temp = λ _ → propTruncIsProp in
-  --   let temp'' = isOfHLevelSuc 1 (temp _) {!!} {!!} in
-  --   let temp''' = eq/ in
-  --   temp'' {!!} {!!} {!!} {!!}
-  -- Seq→⊥-isSurjection {A} A-set cc (⊥-isSet x y p q i j) = -- P = λ y → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥
-  --   let temp : ∀ y → isProp (∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥)
-  --       temp = λ _ → propTruncIsProp in
-  --   let temp'' = isOfHLevelSuc 1 (temp _) ∣ {!!} , {!!} ∣ {!!} in -- ∥ Σ[ a ∈ (Seq A) ] (Seq→⊥ a ≡ ⊥-isSet x y p q i j) ∥
-  --   let temp'3 : ∥ Σ[ a ∈ (Seq A) ] (Seq→⊥ a ≡ ⊥-isSet x y p q i j) ∥
-  --       temp'3 = temp'' {!!} {!!} i j in
-  --   {!!}
-
--- elim : {B : A / R → Type ℓ} →
---  (Bset : (x : A / R) → isSet (B x)) →
---                    (f : (a : A) → (B [ a ])) →
---                    (feq : (a b : A) (r : R a b) →
---                           PathP (λ i → B (eq/ a b r i)) (f a) (f b)) →
---                    (x : A / R) → B x
--- elim Bset f feq [ a ] = f a
--- elim Bset f feq (eq/ a b r i) = feq a b r i
--- elim Bset f feq (squash/ x y p q i j) =
---   isOfHLevel→isOfHLevelDep 2 Bset
---               (g x) (g y) (cong g p) (cong g q) (squash/ x y p q) i j
---     where
---       g = elim Bset f feq
-
-
   Seq/∼→⊥-isSurjection : ∀ {A} → (A-set : isSet A) → Axiom-of-countable-choice ℓ-zero → isSurjection (Seq/∼→⊥ A-set)
   Seq/∼→⊥-isSurjection A-set cc = λ b → Cubical.HITs.PropositionalTruncation.map (λ {(x , y) → [ x ] , y}) (Seq→⊥-isSurjection A-set cc b)
 
@@ -625,51 +572,3 @@ abstract
 
   seq/∼≃⊥ : ∀ {A} → isSet A → Axiom-of-countable-choice ℓ-zero → (Seq A / _∼seq_) ≃ < A >⊥
   seq/∼≃⊥ A-set cc = Seq/∼→⊥ A-set , seq/∼→⊥-isEquiv A-set cc
-
--- -------------------------------------------------------------------------
--- -- Alternative definition of partiality monad using HITs and not HIITs --
--- -------------------------------------------------------------------------
-
--- -- Another Partiality monad (HIT)
--- -- Paper: Quotienting the Delay Monad by WeakBisimilarity (https://niccoloveltri.github.io/mscs_final.pdf)
--- -- Authors: James Chapman, Tarmo Uustalu and Niccoló Veltri
--- -- Formalization: http://cs.ioc.ee/~niccolo/delay/
--- mutual
---   -- free countably-complete join semilattice
---   data P∞ (X : Type₀) : Type₀ where
---      η : X → P∞ X
---      ⊥P∞ : P∞ X
---      ⋁ : (ℕ → P∞ X) → P∞ X
-
---      v-sym : ∀ {x y} → (x v y) ≡ (y v x)
---      v-assoc : ∀ {x y z} → x v (y v z) ≡ (x v y) v z
---      v-now : ∀ {x} → x v x ≡ x
---      v-never : ∀ {x} → x v ⊥P∞ ≡ x
---      v-⋁ : ∀ {s : ℕ → P∞ X} (n : ℕ) → (s n) v (⋁ s) ≡ ⋁ s
---      v-⋁' : ∀ {s : ℕ → P∞ X} {x} → ((⋁ s) v x) ≡ (⋁ λ n → s n v x)
-
---      P∞-set : isSet (P∞ X)
-
---      -- f1 : ?
-
---   _v_ : ∀ {X} (x y : P∞ X) → P∞ X
---   x v y = ⋁ (λ {0 → x ; (suc n) → y})
-
---   _≤P∞_ : ∀ {X} (x y : P∞ X) → Type₀
---   x ≤P∞ y = (x v y) ≡ y
-
--- S' = P∞ Unit
-
--- Pₛ-Container : Container ℓ-zero
--- Pₛ-Container = S' , λ x → x ≡ η tt -- (η tt ≡ ⊤)
-
--- Pₛ-M-type : Set -- What is this??
--- Pₛ-M-type = M Pₛ-Container
-
--- Pₛ : Type₀ → Type₀
--- Pₛ = P₀ Pₛ-Container
-
--- -- if S is the free ωcppo on 1, then Pₛ X is the free ωcppo on X
-
--- h : ∀ {X} → X → Pₛ X
--- h x = (η tt) , (λ _ → x)
