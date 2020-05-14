@@ -2,6 +2,13 @@
 
 module Cubical.Codata.M.AsLimit.partiality-monad where
 
+{-
+  Inspired by  Code related to the paper 
+  "Partiality, Revisited: The Partiality Monad as a Quotient Inductive-Inductive Type" (https://arxiv.org/pdf/1610.09254.pdf)
+  Thorsten Altenkirch, Nils Anders Danielsson and Nicolai Kraus
+  Located at: http://www.cse.chalmers.se/~nad/publications/altenkirch-danielsson-kraus-partiality/README.html
+-}
+
 open import Cubical.Data.Nat
 open import Cubical.Data.Sum
 open import Cubical.Data.Prod
@@ -130,15 +137,16 @@ module _ where
 ----------------------------------
 
 -- module _ where
---   {-# NON_TERMINATING #-}
---   mutual
---     ∞delay→Seq' : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A
---     ∞delay→Seq' {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
---     ∞delay→Seq' {A} (inr tt , t) = shift' (delay→Seq' (t tt))
-  
---     delay→Seq' : ∀ {A} → (delay A) → Seq A
---     delay→Seq' {A} = M-coinduction-const (Seq A) ∞delay→Seq'
-
+--   abstract
+--     {-# NON_TERMINATING #-}
+--     mutual
+--       ∞delay→Seq' : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A
+--       ∞delay→Seq' {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
+--       ∞delay→Seq' {A} (inr tt , t) = shift' (delay→Seq' (t tt))
+    
+--       delay→Seq' : ∀ {A} → (delay A) → Seq A
+--       delay→Seq' {A} = M-coinduction-const (Seq A) ∞delay→Seq'
+      
 --   ∞delay→Seq : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A  
 --   ∞delay→Seq {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
 --   ∞delay→Seq {A} (inr tt , t) = shift' (delay→Seq' (t tt))
@@ -146,58 +154,59 @@ module _ where
 --   delay→Seq : ∀ {A} → (delay A) → Seq A
 --   delay→Seq {A} = M-coinduction-const (Seq A) ∞delay→Seq
 
-  -- TODO : this should equal (delay-tau (Seq→delay' (unshift (g , q))))
-  -- private
-  --   lift-x : ∀ {A} → Seq A → (n : ℕ) → Wₙ (delay-S A) n
-  --   lift-x (g , q) 0 = lift tt
-  --   lift-x (g , q) (suc n) = g 0 , λ _ → lift-x (unshift (g , q)) n
+--   -- -- TODO : this should equal (delay-tau (Seq→delay' (unshift (g , q))))
+--   -- private
+--   --   lift-x : ∀ {A} → Seq A → (n : ℕ) → Wₙ (delay-S A) n
+--   --   lift-x (g , q) 0 = lift tt
+--   --   lift-x (g , q) (suc n) = g 0 , λ _ → lift-x (unshift (g , q)) n
 
-  --   lift-π : ∀ {A} → (t : Seq A) → (n : ℕ) → πₙ (delay-S A) (lift-x t (suc n)) ≡ (lift-x t n)
-  --   lift-π (g , q) 0 = refl {x = lift tt}
-  --   lift-π (g , q) (suc n) i = g 0 , λ _ → lift-π (unshift (g , q)) n i
+--   --   lift-π : ∀ {A} → (t : Seq A) → (n : ℕ) → πₙ (delay-S A) (lift-x t (suc n)) ≡ (lift-x t n)
+--   --   lift-π (g , q) 0 = refl {x = lift tt}
+--   --   lift-π (g , q) (suc n) i = g 0 , λ _ → lift-π (unshift (g , q)) n i
                                               
-  -- Seq→delay : ∀ {A} → Seq A → delay A
-  -- Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → (lift-x (g , q)) , (lift-π (g , q))}
+--   -- Seq→delay : ∀ {A} → Seq A → delay A
+--   -- Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → (lift-x (g , q)) , (lift-π (g , q))}
+
+--   abstract
+--     {-# NON_TERMINATING #-}
+--     Seq→delay' : ∀ {A} → Seq A → delay A
+--     Seq→delay' (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay' (unshift (g , q)))}
   
-  -- {-# NON_TERMINATING #-}
-  -- Seq→delay' : ∀ {A} → Seq A → delay A
-  -- Seq→delay' (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay' (unshift (g , q)))}
-  
-  -- Seq→delay : ∀ {A} → Seq A → delay A
-  -- Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay' (unshift (g , q)))}
+--   Seq→delay : ∀ {A} → Seq A → delay A
+--   Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay' (unshift (g , q)))}
 
-  -- ∞delay-Seq : ∀ {R} (b : P₀ (delay-S R) (delay R)) → Seq→delay (delay→Seq (in-fun b)) ≡ (in-fun b)
-  -- ∞delay-Seq {R} (inl r , b) =
-  --   Seq→delay (delay→Seq (in-fun (inl r , b)))
-  --     ≡⟨ cong Seq→delay (cong (λ a → case a return (λ x₂ → Seq R) of ∞delay→Seq) (out-inverse-in-x (inl r , b))) ⟩
-  --   delay-ret r
-  --     ≡⟨ cong (λ a → in-fun (inl r , a)) (isContr→isProp isContr⊥→A (λ ()) b) ⟩
-  --   in-fun (inl r , b) ∎
-  -- ∞delay-Seq {R} (inr tt , t) =
-  --   Seq→delay (delay→Seq (in-fun (inr tt , t)))
-  --     ≡⟨ cong Seq→delay (cong (λ a → case a return (λ x₂ → Seq R) of ∞delay→Seq) (out-inverse-in-x (inr tt , t))) ⟩
-  --   Seq→delay (∞delay→Seq (inr tt , t))
-  --     ≡⟨ refl ⟩
-  --   Seq→delay (shift' (delay→Seq' (t tt)))
-  --     ≡⟨ refl ⟩
-  --   delay-tau (Seq→delay' (unshift (shift' (delay→Seq' (t tt)))))
-  --     ≡⟨ cong (delay-tau ∘ Seq→delay') unshift-shift (delay→Seq' (t tt)) ⟩
-  --   delay-tau (Seq→delay' (delay→Seq' (t tt)))
-  --     ≡⟨ ? ⟩ -- cong delay-tau (delay-Seq (t tt))
-  --   in-fun (inr tt , t) ∎
+--   ∞delay-Seq : ∀ {R} (b : P₀ (delay-S R) (delay R)) → Seq→delay (delay→Seq (in-fun b)) ≡ (in-fun b)
+--   ∞delay-Seq {R} (inl r , b) =
+--     Seq→delay (delay→Seq (in-fun (inl r , b)))
+--       ≡⟨ cong Seq→delay (cong (λ a → case a return (λ x₂ → Seq R) of ∞delay→Seq) (out-inverse-in-x (inl r , b))) ⟩
+--     delay-ret r
+--       ≡⟨ cong (λ a → in-fun (inl r , a)) (isContr→isProp isContr⊥→A (λ ()) b) ⟩
+--     in-fun (inl r , b) ∎
+--   ∞delay-Seq {R} (inr tt , t) =
+--     Seq→delay (delay→Seq (in-fun (inr tt , t)))
+--       ≡⟨ cong Seq→delay (cong (λ a → case a return (λ x₂ → Seq R) of ∞delay→Seq) (out-inverse-in-x (inr tt , t))) ⟩
+--     Seq→delay (∞delay→Seq (inr tt , t))
+--       ≡⟨ refl ⟩
+--     Seq→delay (shift' (delay→Seq' (t tt)))
+--       ≡⟨ refl ⟩
+--     delay-tau (Seq→delay' (unshift (shift' (delay→Seq' (t tt)))))
+--       ≡⟨ cong (delay-tau ∘ Seq→delay') unshift-shift (delay→Seq' (t tt)) ⟩
+--     delay-tau (Seq→delay' (delay→Seq' (t tt)))
+--       ≡⟨ ? ⟩ -- cong delay-tau (delay-Seq (t tt))
+--     in-fun (inr tt , t) ∎
 
-  --   postulate
-  --     delay-Seq : ∀ {R} (b : delay R) → Seq→delay (delay→Seq b) ≡ b
-  --   -- delay-Seq = M-coinduction (λ x → Seq→delay (delay→Seq x) ≡ x) ∞delay-Seq
+--   --   postulate
+--   --     delay-Seq : ∀ {R} (b : delay R) → Seq→delay (delay→Seq b) ≡ b
+--   --   -- delay-Seq = M-coinduction (λ x → Seq→delay (delay→Seq x) ≡ x) ∞delay-Seq
 
-  -- Seq-delay : ∀ {R} (b : Seq R) → delay→Seq (Seq→delay b) ≡ b
-  -- Seq-delay (g , q) = case g 0 of \{(inl r) -> refl ; (inr tt) -> delay→Seq (Seq→delay (g , q)) ≡⟨ cong shift (Seq-delay (unshift (g, q))) ⟩ shift-unshift (g, q) }
+--   -- Seq-delay : ∀ {R} (b : Seq R) → delay→Seq (Seq→delay b) ≡ b
+--   -- Seq-delay (g , q) = case g 0 of \{(inl r) -> refl ; (inr tt) -> delay→Seq (Seq→delay (g , q)) ≡⟨ cong shift (Seq-delay (unshift (g, q))) ⟩ shift-unshift (g, q) }
 
-  -- delay-Seq-Iso : ∀ {A} → Iso (delay A) (Seq A)
-  -- delay-Seq-Iso = (iso delay→Seq Seq→delay Seq-delay delay-Seq)
+--   -- delay-Seq-Iso : ∀ {A} → Iso (delay A) (Seq A)
+--   -- delay-Seq-Iso = (iso delay→Seq Seq→delay Seq-delay delay-Seq)
 
-  -- delay≡Seq : ∀ {A} → delay A ≡ Seq A
-  -- delay≡Seq = isoToPath delay-Seq-Iso
+--   -- delay≡Seq : ∀ {A} → delay A ≡ Seq A
+--   -- delay≡Seq = isoToPath delay-Seq-Iso
 
 -----------------------
 -- Sequence ordering --
@@ -477,62 +486,39 @@ abstract
   -- weakly effective?
   Seq→⊥-isInjective : ∀ {A} → (A-set : isSet A) → (s t : Seq A) → Seq→⊥ s ≡ Seq→⊥ t → s ∼seq t
   Seq→⊥-isInjective {A} A-set s t x =
-    lemma s t (⊑-refl-constr x) ,
-    lemma t s (⊑-refl-constr (sym x))
+    lemma s t x ,
+    lemma t s (sym x)
     where
       postulate
         ⇓≃now⊑ : (x : Seq A) {y : A} → Iso (x ↓seq y) (η y ⊑ Seq→⊥ x)
     
-      lemma : (x y : Seq A) → Seq→⊥ x ⊑ Seq→⊥ y → (∀ a → ∥ x ↓seq a ∥ → ∥ y ↓seq a ∥)
-      lemma x y p a q =
-        let temp'1 : ∥ x ↓seq a ∥
-            temp'1 = q in
-        let temp'2 : x ↓seq a
-            temp'2 = proj₂ (↓⇔∥↓∥ A-set x) temp'1 in
-        let temp'3 : η a ⊑ Seq→⊥ x
-            temp'3 = Iso.fun (⇓≃now⊑ x) temp'2 in
-        let temp'4 : η a ⊑ Seq→⊥ y
-            temp'4 = ⊑-trans temp'3 p in
-        let temp'5 : y ↓seq a
-            temp'5 = Iso.inv (⇓≃now⊑ y) temp'4 in
-        proj₁ (↓⇔∥↓∥ A-set y) temp'5
-
-      -- Maybe→⊥-isEmbedding : isEmbedding Maybe→⊥
-      -- Maybe→⊥-isEmbedding = {!!}
-
-      -- Maybe→⊥-isInjective : ∀ (s t : A ⊎ Unit) → (Maybe→⊥ s ≡ Maybe→⊥ t) ≡ (s ≡ t)
-      -- Maybe→⊥-isInjective s t = isEmbedding→Injection Maybe→⊥ {!!} tt
-
-      -- sfad-helper :
-      --   ∀ (t : Seq A) a
-      --   → ∥ (Σ[ n ∈ ℕ ] η a ⊑ Maybe→⊥ (fst t n)) ∥
-      --   ≡ ∥ (Σ[ n ∈ ℕ ] fst t n ≡ inl a) ∥
-      -- sfad-helper t a =
-      --   ∥ (Σ[ n ∈ ℕ ] η a ⊑ Maybe→⊥ (fst t n)) ∥
-      --      ≡⟨ cong (λ k → ∥ (Σ[ n ∈ ℕ ] k n) ∥) (funExt λ n → isoToPath (η⊑x-x≡η-Iso (Maybe→⊥ (fst t n)) a)) ⟩
-      --   ∥ (Σ[ n ∈ ℕ ] Maybe→⊥ (fst t n) ≡ η a) ∥
-      --     ≡⟨ refl ⟩
-      --   ∥ (Σ[ n ∈ ℕ ] Maybe→⊥ (fst t n) ≡ Maybe→⊥ (inl a)) ∥
-      --     ≡⟨ cong (λ k → ∥ Σ[ n ∈ ℕ ] k n ∥) (funExt λ n → Maybe→⊥-isInjective (fst t n) (inl a)) ⟩
-      --   ∥ (Σ[ n ∈ ℕ ] fst t n ≡ inl a) ∥ ∎
-
-      -- sfad : ∀ s t → Seq→⊥ s ≡ Seq→⊥ t → (a : A) → ∥ s ↓seq a ∥ → ∥ t ↓seq a ∥
-      -- sfad s t x a q =
-      --   let (n , k) = proj₂ (↓⇔∥↓∥ A-set s) q in
-      --   -- -- use Propositional truncation elim ?
-      --   transport
-      --     (sfad-helper t a)
-      --     (η⊑⊔ (Maybe→⊥ ∘ fst t) (Maybe→⊥-mono ∘ snd t) a (Iso.inv (η⊑x-x≡η-Iso (Seq→⊥ t) a) (subst (λ x₁ → x₁ ≡ η a) x (Iso.fun (η⊑x-x≡η-Iso (Seq→⊥ s) a) (subst (λ x₂ → Maybe→⊥ x₂ ⊑ ⊔ ((Maybe→⊥ ∘ fst s) , (Maybe→⊥-mono ∘ snd s))) k (upper-bound ((Maybe→⊥ ∘ fst s) , (Maybe→⊥-mono ∘ snd s)) n))))))
+      lemma : (x y : Seq A) → Seq→⊥ x ≡ Seq→⊥ y → (∀ a → ∥ x ↓seq a ∥ → ∥ y ↓seq a ∥)
+      lemma x y p a q = Cubical.HITs.PropositionalTruncation.map (λ x₁ → Iso.inv (⇓≃now⊑ y) (subst (λ k → η a ⊑ k) p (Iso.fun (⇓≃now⊑ x) x₁))) q
+        -- let temp'1 : ∥ x ↓seq a ∥
+        --     temp'1 = q in
+        -- let temp'2 : x ↓seq a
+        --     temp'2 = proj₂ (↓⇔∥↓∥ A-set x) temp'1 in
+        -- let temp'3 : η a ⊑ Seq→⊥ x
+        --     temp'3 = Iso.fun (⇓≃now⊑ x) temp'2 in
+        -- let temp'4 : η a ⊑ Seq→⊥ y
+        --     temp'4 = ⊑-trans temp'3 p in
+        -- let temp'5 : y ↓seq a
+        --     temp'5 = Iso.inv (⇓≃now⊑ y) temp'4 in
+        -- proj₁ (↓⇔∥↓∥ A-set y) temp'5
 
   Seq/∼→⊥-isInjective : ∀ {A} → (A-set : isSet A) → isInjective (Seq/∼→⊥ A-set)
   Seq/∼→⊥-isInjective {A} A-set {x} {y} =
     elimProp
+      {A = Seq A}
+      {R = _∼seq_}
       {B = λ x → Seq/∼→⊥ A-set x ≡ Seq/∼→⊥ A-set y → x ≡ y}
-      (λ x → isPropΠ λ _ x' y' → squash/ x y x' y') 
+      (λ x → isPropΠ λ _ → squash/ x y) 
       (λ x →
         elimProp
+          {A = Seq A}
+          {R = _∼seq_}
           {B = λ y → Seq→⊥ x ≡ Seq/∼→⊥ A-set y → [ x ] ≡ y}
-          (λ y → isPropΠ λ _ x' y' → squash/ [ x ] y x' y')
+          (λ y → isPropΠ λ _ → squash/ [ x ] y)
           (λ y → eq/ x y ∘ (Seq→⊥-isInjective A-set x y))
           y)
       x
@@ -544,20 +530,71 @@ abstract
 -- Axiom-of-countable-choice b =
 --   {B : ℕ → Set b} → (∀ x → ∥ B x ∥) → ∥ (∀ x → B x) ∥
 
-  countable-choice : {!!}
-  countable-choice = {!!}
+  -- The axiom of countable choice, stated in a corresponding way.
 
-  Seq→⊥-isSurjection : ∀ {A} → countable-choice → isSurjection (Seq→⊥ {A})
-  Seq→⊥-isSurjection = {!!}
+  Axiom-of-countable-choice : (ℓ : Level) → Set (ℓ-suc ℓ)
+  Axiom-of-countable-choice ℓ = {B : ℕ → Set ℓ} → (∀ x → ∥ B x ∥) → ∥ (∀ x → B x) ∥
   
-  Seq/∼→⊥-isSurjection : ∀ {A} → (A-set : isSet A) → isSurjection (Seq/∼→⊥ A-set)
-  Seq/∼→⊥-isSurjection = {!!}
+  private
+    postulate
+      -- the least upper bound of a constant sequence, is the constant
+      sldfkja : ∀ {A : Set} (s : < A >⊥) → ⊔ ((λ _ → s) , (λ _ → ⊑-refl s)) ≡ s
 
-  seq/∼→⊥-isEquiv : ∀ {A} → (A-set : isSet A) → isEquiv (Seq/∼→⊥ A-set)
-  seq/∼→⊥-isEquiv A-set = isEmbedding×isSurjection→isEquiv ((Seq/∼→⊥-isEmbedding A-set) , (Seq/∼→⊥-isSurjection A-set)) 
+  const-seq : ∀ {A : Set} → (s : A ⊎ Unit) → Seq→⊥ ((λ _ → s) , (λ _ → inl refl)) ≡ Maybe→⊥ s
+  const-seq s =
+    Seq→⊥ ((λ _ → s) , (λ _ → inl refl))
+      ≡⟨ refl ⟩
+    ⊔ ((λ _ → Maybe→⊥ s) , (λ _ → subst (λ a → Maybe→⊥ s ⊑ Maybe→⊥ a) refl (⊑-refl (Maybe→⊥ s))))
+      ≡⟨ cong (λ a → ⊔ ((λ _ → Maybe→⊥ s) , λ _ → a)) (substRefl {B = λ a → Maybe→⊥ s ⊑ Maybe→⊥ a} (⊑-refl (Maybe→⊥ s))) ⟩
+    ⊔ ((λ _ → Maybe→⊥ s) , (λ _ → ⊑-refl (Maybe→⊥ s)))
+      ≡⟨ sldfkja (Maybe→⊥ s) ⟩
+    Maybe→⊥ s ∎
 
-  ⊥-⊥-Iso : ∀ {A} → isSet A → (Seq A / _∼seq_) ≃ < A >⊥
-  ⊥-⊥-Iso A-set = {!!} , (seq/∼→⊥-isEquiv A-set)
+  Seq→⊥-isSurjection : ∀ {A : Set} → (A-set : isSet A) → Axiom-of-countable-choice ℓ-zero → isSurjection (Seq→⊥ {A})
+  Seq→⊥-isSurjection {A} A-set _ never = ∣ ((λ _ → inr tt) , (λ _ → inl refl)) , const-seq (inr tt) ∣
+  Seq→⊥-isSurjection A-set _ (η a) = ∣ ((λ _ → inl a) , (λ _ → inl refl)) , const-seq (inl a) ∣
+  Seq→⊥-isSurjection {A} A-set cc (⊔ (p , q)) = lhrekj (p , q) λ n → Seq→⊥-isSurjection A-set cc (p n)
+    where
+      postulate
+        pointwise-equivalence→upper-bound-equivalence :
+          ∀ (s : Increasing-sequence A)
+          → (f : ℕ → Seq A)
+          → (∀ n → Seq→⊥ (f n) ≡ fst s n)
+          -------------------------
+          → Σ[ x ∈ Seq A ] (Seq→⊥ x ≡ ⊔ s)
+        
+      lhrekj : ∀ (s : Increasing-sequence A) (p : ∀ n → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ fst s n ∥) → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ ⊔ s ∥
+      lhrekj s p =
+        let temp'1 : ∀ n → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ fst s n ∥
+            temp'1 = p in
+        let temp'2 : ∥ (∀ n → Σ[ x ∈ Seq A ] Seq→⊥ x ≡ fst s n) ∥
+            temp'2 = cc temp'1 in
+        let temp'3 : ∥ (Σ[ f ∈ (ℕ → Seq A) ] (∀ n → Seq→⊥ (f n) ≡ fst s n)) ∥
+            temp'3 = Cubical.HITs.PropositionalTruncation.map (λ x → (λ n → x n .fst) , (λ n → x n .snd)) temp'2 in
+        let temp'4 : ∥ (Σ[ x ∈ Seq A ] (Seq→⊥ x ≡ ⊔ s)) ∥
+            temp'4 = Cubical.HITs.PropositionalTruncation.map (uncurry (pointwise-equivalence→upper-bound-equivalence s)) temp'3 in
+        temp'4
+  Seq→⊥-isSurjection {A} A-set cc (α {x} {y} p q i) = -- these should follow from propositional trunction?
+    let temp : ∀ y → isProp (∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥)
+        temp = λ _ → propTruncIsProp
+    in
+    let temp'1 = temp (α p q i) in
+    let temp'' = isOfHLevelSuc 1 (temp {!!}) {!!} {!!} in
+    temp'' {!!} {!!} {!!} {!!}
+  Seq→⊥-isSurjection {A} A-set cc (⊥-isSet x y p q i j) = -- P = λ y → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥
+    let temp : ∀ y → isProp (∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥)
+        temp = λ _ → propTruncIsProp in
+    let temp'' = isOfHLevelSuc 1 (temp {!!}) {!!} {!!} in
+      temp'' {!!} {!!} i j
+     
+  Seq/∼→⊥-isSurjection : ∀ {A} → (A-set : isSet A) → Axiom-of-countable-choice ℓ-zero → isSurjection (Seq/∼→⊥ A-set)
+  Seq/∼→⊥-isSurjection A-set cc = λ b → Cubical.HITs.PropositionalTruncation.map (λ {(x , y) → [ x ] , y}) (Seq→⊥-isSurjection A-set cc b)
+
+  seq/∼→⊥-isEquiv : ∀ {A} → (A-set : isSet A) → Axiom-of-countable-choice ℓ-zero → isEquiv (Seq/∼→⊥ A-set)
+  seq/∼→⊥-isEquiv A-set cc = isEmbedding×isSurjection→isEquiv ((Seq/∼→⊥-isEmbedding A-set) , (Seq/∼→⊥-isSurjection A-set cc)) 
+
+  seq/∼≃⊥ : ∀ {A} → isSet A → Axiom-of-countable-choice ℓ-zero → (Seq A / _∼seq_) ≃ < A >⊥
+  seq/∼≃⊥ A-set cc = Seq/∼→⊥ A-set , seq/∼→⊥-isEquiv A-set cc
 
 -- -------------------------------------------------------------------------
 -- -- Alternative definition of partiality monad using HITs and not HIITs --
