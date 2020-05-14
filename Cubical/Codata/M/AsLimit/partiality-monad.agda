@@ -494,17 +494,6 @@ abstract
     
       lemma : (x y : Seq A) → Seq→⊥ x ≡ Seq→⊥ y → (∀ a → ∥ x ↓seq a ∥ → ∥ y ↓seq a ∥)
       lemma x y p a q = Cubical.HITs.PropositionalTruncation.map (λ x₁ → Iso.inv (⇓≃now⊑ y) (subst (λ k → η a ⊑ k) p (Iso.fun (⇓≃now⊑ x) x₁))) q
-        -- let temp'1 : ∥ x ↓seq a ∥
-        --     temp'1 = q in
-        -- let temp'2 : x ↓seq a
-        --     temp'2 = proj₂ (↓⇔∥↓∥ A-set x) temp'1 in
-        -- let temp'3 : η a ⊑ Seq→⊥ x
-        --     temp'3 = Iso.fun (⇓≃now⊑ x) temp'2 in
-        -- let temp'4 : η a ⊑ Seq→⊥ y
-        --     temp'4 = ⊑-trans temp'3 p in
-        -- let temp'5 : y ↓seq a
-        --     temp'5 = Iso.inv (⇓≃now⊑ y) temp'4 in
-        -- proj₁ (↓⇔∥↓∥ A-set y) temp'5
 
   Seq/∼→⊥-isInjective : ∀ {A} → (A-set : isSet A) → isInjective (Seq/∼→⊥ A-set)
   Seq/∼→⊥-isInjective {A} A-set {x} {y} =
@@ -550,21 +539,31 @@ abstract
       ≡⟨ sldfkja (Maybe→⊥ s) ⟩
     Maybe→⊥ s ∎
 
+  private
+    rec⊥ :
+      ∀ {A} (P : < A >⊥ → Set)
+      → P never
+      → ((a : A) → P (η a))
+      → ((s : Σ[ s ∈ (ℕ → < A >⊥) ] ((n : ℕ) → s n ⊑ s (suc n))) → ((n : ℕ) → P (fst s n)) → P (⊔ s))
+      → (x : < A >⊥) → P x
+    rec⊥ = {!!}
+
+  private
+    postulate
+      pointwise-equivalence→upper-bound-equivalence :
+        ∀ {A} (s : Increasing-sequence A)
+        → (f : ℕ → Seq A)
+        → (∀ n → Seq→⊥ (f n) ≡ fst s n)
+        -------------------------
+        → Σ[ x ∈ Seq A ] (Seq→⊥ x ≡ ⊔ s)
+
   Seq→⊥-isSurjection : ∀ {A : Set} → (A-set : isSet A) → Axiom-of-countable-choice ℓ-zero → isSurjection (Seq→⊥ {A})
-  Seq→⊥-isSurjection {A} A-set _ never = ∣ ((λ _ → inr tt) , (λ _ → inl refl)) , const-seq (inr tt) ∣
-  Seq→⊥-isSurjection A-set _ (η a) = ∣ ((λ _ → inl a) , (λ _ → inl refl)) , const-seq (inl a) ∣
-  Seq→⊥-isSurjection {A} A-set cc (⊔ (p , q)) = lhrekj (p , q) λ n → Seq→⊥-isSurjection A-set cc (p n)
-    where
-      postulate
-        pointwise-equivalence→upper-bound-equivalence :
-          ∀ (s : Increasing-sequence A)
-          → (f : ℕ → Seq A)
-          → (∀ n → Seq→⊥ (f n) ≡ fst s n)
-          -------------------------
-          → Σ[ x ∈ Seq A ] (Seq→⊥ x ≡ ⊔ s)
-        
-      lhrekj : ∀ (s : Increasing-sequence A) (p : ∀ n → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ fst s n ∥) → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ ⊔ s ∥
-      lhrekj s p =
+  Seq→⊥-isSurjection {A} A-set cc =
+    rec⊥
+      (λ y → ∥ (Σ-syntax (Seq A) (λ x → Seq→⊥ x ≡ y)) ∥)
+      ∣ ((λ _ → inr tt) , (λ _ → inl refl)) , const-seq (inr tt) ∣
+      (λ a → ∣ ((λ _ → inl a) , (λ _ → inl refl)) , const-seq (inl a) ∣)
+      λ s p →
         let temp'1 : ∀ n → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ fst s n ∥
             temp'1 = p in
         let temp'2 : ∥ (∀ n → Σ[ x ∈ Seq A ] Seq→⊥ x ≡ fst s n) ∥
@@ -574,19 +573,50 @@ abstract
         let temp'4 : ∥ (Σ[ x ∈ Seq A ] (Seq→⊥ x ≡ ⊔ s)) ∥
             temp'4 = Cubical.HITs.PropositionalTruncation.map (uncurry (pointwise-equivalence→upper-bound-equivalence s)) temp'3 in
         temp'4
-  Seq→⊥-isSurjection {A} A-set cc (α {x} {y} p q i) = -- these should follow from propositional trunction?
-    let temp : ∀ y → isProp (∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥)
-        temp = λ _ → propTruncIsProp
-    in
-    let temp'1 = temp (α p q i) in
-    let temp'' = isOfHLevelSuc 1 (temp {!!}) {!!} {!!} in
-    temp'' {!!} {!!} {!!} {!!}
-  Seq→⊥-isSurjection {A} A-set cc (⊥-isSet x y p q i j) = -- P = λ y → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥
-    let temp : ∀ y → isProp (∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥)
-        temp = λ _ → propTruncIsProp in
-    let temp'' = isOfHLevelSuc 1 (temp {!!}) {!!} {!!} in
-      temp'' {!!} {!!} i j
-     
+
+  -- Seq→⊥-isSurjection : ∀ {A : Set} → (A-set : isSet A) → Axiom-of-countable-choice ℓ-zero → isSurjection (Seq→⊥ {A})
+  -- Seq→⊥-isSurjection {A} A-set _ never = ∣ ((λ _ → inr tt) , (λ _ → inl refl)) , const-seq (inr tt) ∣
+  -- Seq→⊥-isSurjection A-set _ (η a) = ∣ ((λ _ → inl a) , (λ _ → inl refl)) , const-seq (inl a) ∣
+  -- Seq→⊥-isSurjection {A} A-set cc (⊔ s) =
+    -- let p = λ n → Seq→⊥-isSurjection A-set cc (fst s n) in
+    -- let temp'1 : ∀ n → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ fst s n ∥
+    --     temp'1 = p in
+    -- let temp'2 : ∥ (∀ n → Σ[ x ∈ Seq A ] Seq→⊥ x ≡ fst s n) ∥
+    --     temp'2 = cc temp'1 in
+    -- let temp'3 : ∥ (Σ[ f ∈ (ℕ → Seq A) ] (∀ n → Seq→⊥ (f n) ≡ fst s n)) ∥
+    --     temp'3 = Cubical.HITs.PropositionalTruncation.map (λ x → (λ n → x n .fst) , (λ n → x n .snd)) temp'2 in
+    -- let temp'4 : ∥ (Σ[ x ∈ Seq A ] (Seq→⊥ x ≡ ⊔ s)) ∥
+    --     temp'4 = Cubical.HITs.PropositionalTruncation.map (uncurry (pointwise-equivalence→upper-bound-equivalence s)) temp'3 in
+    --     temp'4
+  -- Seq→⊥-isSurjection {A} A-set cc (α {x} {y} p q i) = -- these should follow from propositional trunction?
+  --   let temp : ∀ y → isProp (∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥)
+  --       temp = λ _ → propTruncIsProp in
+  --   let temp'' = isOfHLevelSuc 1 (temp _) {!!} {!!} in
+  --   let temp''' = eq/ in
+  --   temp'' {!!} {!!} {!!} {!!}
+  -- Seq→⊥-isSurjection {A} A-set cc (⊥-isSet x y p q i j) = -- P = λ y → ∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥
+  --   let temp : ∀ y → isProp (∥ Σ[ x ∈ Seq A ] Seq→⊥ x ≡ y ∥)
+  --       temp = λ _ → propTruncIsProp in
+  --   let temp'' = isOfHLevelSuc 1 (temp _) ∣ {!!} , {!!} ∣ {!!} in -- ∥ Σ[ a ∈ (Seq A) ] (Seq→⊥ a ≡ ⊥-isSet x y p q i j) ∥
+  --   let temp'3 : ∥ Σ[ a ∈ (Seq A) ] (Seq→⊥ a ≡ ⊥-isSet x y p q i j) ∥
+  --       temp'3 = temp'' {!!} {!!} i j in
+  --   {!!}
+
+-- elim : {B : A / R → Type ℓ} →
+--  (Bset : (x : A / R) → isSet (B x)) →
+--                    (f : (a : A) → (B [ a ])) →
+--                    (feq : (a b : A) (r : R a b) →
+--                           PathP (λ i → B (eq/ a b r i)) (f a) (f b)) →
+--                    (x : A / R) → B x
+-- elim Bset f feq [ a ] = f a
+-- elim Bset f feq (eq/ a b r i) = feq a b r i
+-- elim Bset f feq (squash/ x y p q i j) =
+--   isOfHLevel→isOfHLevelDep 2 Bset
+--               (g x) (g y) (cong g p) (cong g q) (squash/ x y p q) i j
+--     where
+--       g = elim Bset f feq
+
+
   Seq/∼→⊥-isSurjection : ∀ {A} → (A-set : isSet A) → Axiom-of-countable-choice ℓ-zero → isSurjection (Seq/∼→⊥ A-set)
   Seq/∼→⊥-isSurjection A-set cc = λ b → Cubical.HITs.PropositionalTruncation.map (λ {(x , y) → [ x ] , y}) (Seq→⊥-isSurjection A-set cc b)
 
