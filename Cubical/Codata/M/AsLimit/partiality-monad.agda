@@ -30,8 +30,24 @@ open import Cubical.Foundations.Equiv
 
 open import Cubical.Functions.Embedding
 open import Cubical.Functions.Surjection
+open import Cubical.Functions.FunExtEquiv
 
 open import Cubical.Foundations.HLevels
+
+-- Weak bisimularity for delay monad
+mutual
+  data _∼delay_ {R} : (_ _ : delay R) → Set where
+    ∼now : ∀ (r : R) → delay-ret r ∼delay delay-ret r
+    ∼later-l : ∀ t u → t ∼delay u → delay-tau t ∼delay u
+    ∼later-r : ∀ t u → t ∼delay u → t ∼delay delay-tau u
+    ∼later : ∀ t u → t ∞∼delay u → delay-tau t ∼delay delay-tau u
+
+  record _∞∼delay_ {R} (x y : delay R) : Set where
+    coinductive
+    field
+      force : x ∼delay y
+
+-- Alternative definition of sequences
 
 -- ismon : ∀ {A : Set} → (g : ℕ → A ⊎ Unit) → Set
 -- ismon {A} g = (n : ℕ) → (g n ≡ g (suc n))
@@ -110,10 +126,10 @@ module _ where
   Seq : Set → Set
   Seq A = (Σ (ℕ → A ⊎ Unit) (λ g → ismon g))
 
-  shift-seq : ∀ {A} → (t : Seq A) → Σ (A ⊎ Unit) (λ va → ismon' (λ {0 → va ; (suc n) → fst t n}) 0) → Seq A
+  shift-seq : ∀ {A : Set} → (t : Seq A) → Σ (A ⊎ Unit) (λ va → ismon' (λ {0 → va ; (suc n) → fst t n}) 0) → Seq A
   shift-seq (g , a) (va , mon) = (λ {0 → va ; (suc n) → g n}) , (λ {0 → mon ; (suc n) → a n})
 
-  shift' : ∀ {A} → Seq A → Seq A
+  shift' : ∀ {A : Set} → Seq A → Seq A
   shift' t =
     shift-seq t
       ((inr tt) ,
@@ -136,92 +152,136 @@ module _ where
 -- Sequence equivalent to Delay --
 ----------------------------------
 
--- module _ where
---   abstract
---     {-# NON_TERMINATING #-}
---     mutual
---       ∞delay→Seq' : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A
---       ∞delay→Seq' {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
---       ∞delay→Seq' {A} (inr tt , t) = shift' (delay→Seq' (t tt))
+module _ where
+  abstract
+    {-# NON_TERMINATING #-}
+    mutual
+      ∞delay→Seq' : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A
+      ∞delay→Seq' {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
+      ∞delay→Seq' {A} (inr tt , t) = shift' (delay→Seq' (t tt))
     
---       delay→Seq' : ∀ {A} → (delay A) → Seq A
---       delay→Seq' {A} = M-coinduction-const (Seq A) ∞delay→Seq'
+      delay→Seq' : ∀ {A} → (delay A) → Seq A
+      delay→Seq' {A} = M-coinduction-const (Seq A) ∞delay→Seq'
       
---   ∞delay→Seq : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A  
---   ∞delay→Seq {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
---   ∞delay→Seq {A} (inr tt , t) = shift' (delay→Seq' (t tt))
+  ∞delay→Seq : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A  
+  ∞delay→Seq {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
+  ∞delay→Seq {A} (inr tt , t) = shift' (delay→Seq' (t tt))
   
---   delay→Seq : ∀ {A} → (delay A) → Seq A
---   delay→Seq {A} = M-coinduction-const (Seq A) ∞delay→Seq
+  delay→Seq : ∀ {A} → (delay A) → Seq A
+  delay→Seq {A} = M-coinduction-const (Seq A) ∞delay→Seq
 
---   -- -- TODO : this should equal (delay-tau (Seq→delay' (unshift (g , q))))
---   -- private
---   --   lift-x : ∀ {A} → Seq A → (n : ℕ) → Wₙ (delay-S A) n
---   --   lift-x (g , q) 0 = lift tt
---   --   lift-x (g , q) (suc n) = g 0 , λ _ → lift-x (unshift (g , q)) n
+  -- -- -- TODO : this should equal (delay-tau (Seq→delay' (unshift (g , q))))
+  -- -- private
+  -- --   lift-x : ∀ {A} → Seq A → (n : ℕ) → Wₙ (delay-S A) n
+  -- --   lift-x (g , q) 0 = lift tt
+  -- --   lift-x (g , q) (suc n) = g 0 , λ _ → lift-x (unshift (g , q)) n
 
---   --   lift-π : ∀ {A} → (t : Seq A) → (n : ℕ) → πₙ (delay-S A) (lift-x t (suc n)) ≡ (lift-x t n)
---   --   lift-π (g , q) 0 = refl {x = lift tt}
---   --   lift-π (g , q) (suc n) i = g 0 , λ _ → lift-π (unshift (g , q)) n i
+  -- --   lift-π : ∀ {A} → (t : Seq A) → (n : ℕ) → πₙ (delay-S A) (lift-x t (suc n)) ≡ (lift-x t n)
+  -- --   lift-π (g , q) 0 = refl {x = lift tt}
+  -- --   lift-π (g , q) (suc n) i = g 0 , λ _ → lift-π (unshift (g , q)) n i
                                               
---   -- Seq→delay : ∀ {A} → Seq A → delay A
---   -- Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → (lift-x (g , q)) , (lift-π (g , q))}
+  -- -- Seq→delay : ∀ {A} → Seq A → delay A
+  -- -- Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → (lift-x (g , q)) , (lift-π (g , q))}
 
---   abstract
---     {-# NON_TERMINATING #-}
---     Seq→delay' : ∀ {A} → Seq A → delay A
---     Seq→delay' (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay' (unshift (g , q)))}
+  abstract
+    {-# NON_TERMINATING #-}
+    Seq→delay' : ∀ {A} → Seq A → delay A
+    Seq→delay' (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay' (unshift (g , q)))}
   
---   Seq→delay : ∀ {A} → Seq A → delay A
---   Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay' (unshift (g , q)))}
+  Seq→delay : ∀ {A} → Seq A → delay A
+  Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay' (unshift (g , q)))}
+  
+  postulate
+    ∞delay-Seq : ∀ {R} (b : P₀ (delay-S R) (delay R)) → Seq→delay (delay→Seq (in-fun b)) ≡ (in-fun b)
+  -- ∞delay-Seq {R} (inl r , b) =
+  --   Seq→delay (delay→Seq (in-fun (inl r , b)))
+  --     ≡⟨ cong Seq→delay (cong (λ a → case a return (λ x₂ → Seq R) of ∞delay→Seq) (out-inverse-in-x (inl r , b))) ⟩
+  --   delay-ret r
+  --     ≡⟨ cong (λ a → in-fun (inl r , a)) (isContr→isProp isContr⊥→A (λ ()) b) ⟩
+  --   in-fun (inl r , b) ∎
+  -- ∞delay-Seq {R} (inr tt , t) =
+  --   Seq→delay (delay→Seq (in-fun (inr tt , t)))
+  --     ≡⟨ cong Seq→delay (cong (λ a → case a return (λ x₂ → Seq R) of ∞delay→Seq) (out-inverse-in-x (inr tt , t))) ⟩
+  --   Seq→delay (∞delay→Seq (inr tt , t))
+  --     ≡⟨ refl ⟩
+  --   Seq→delay (shift' (delay→Seq' (t tt)))
+  --     ≡⟨ refl ⟩
+  --   delay-tau (Seq→delay' (unshift (shift' (delay→Seq' (t tt)))))
+  --     ≡⟨ cong (delay-tau ∘ Seq→delay') unshift-shift (delay→Seq' (t tt)) ⟩
+  --   delay-tau (Seq→delay' (delay→Seq' (t tt)))
+  --     ≡⟨ ? ⟩ -- cong delay-tau (delay-Seq (t tt))
+  --   in-fun (inr tt , t) ∎
 
---   ∞delay-Seq : ∀ {R} (b : P₀ (delay-S R) (delay R)) → Seq→delay (delay→Seq (in-fun b)) ≡ (in-fun b)
---   ∞delay-Seq {R} (inl r , b) =
---     Seq→delay (delay→Seq (in-fun (inl r , b)))
---       ≡⟨ cong Seq→delay (cong (λ a → case a return (λ x₂ → Seq R) of ∞delay→Seq) (out-inverse-in-x (inl r , b))) ⟩
---     delay-ret r
---       ≡⟨ cong (λ a → in-fun (inl r , a)) (isContr→isProp isContr⊥→A (λ ()) b) ⟩
---     in-fun (inl r , b) ∎
---   ∞delay-Seq {R} (inr tt , t) =
---     Seq→delay (delay→Seq (in-fun (inr tt , t)))
---       ≡⟨ cong Seq→delay (cong (λ a → case a return (λ x₂ → Seq R) of ∞delay→Seq) (out-inverse-in-x (inr tt , t))) ⟩
---     Seq→delay (∞delay→Seq (inr tt , t))
---       ≡⟨ refl ⟩
---     Seq→delay (shift' (delay→Seq' (t tt)))
---       ≡⟨ refl ⟩
---     delay-tau (Seq→delay' (unshift (shift' (delay→Seq' (t tt)))))
---       ≡⟨ cong (delay-tau ∘ Seq→delay') unshift-shift (delay→Seq' (t tt)) ⟩
---     delay-tau (Seq→delay' (delay→Seq' (t tt)))
---       ≡⟨ ? ⟩ -- cong delay-tau (delay-Seq (t tt))
---     in-fun (inr tt , t) ∎
+  delay-Seq : ∀ {R} (b : delay R) → Seq→delay (delay→Seq b) ≡ b
+  delay-Seq = M-coinduction (λ x → Seq→delay (delay→Seq x) ≡ x) ∞delay-Seq
 
---   --   postulate
---   --     delay-Seq : ∀ {R} (b : delay R) → Seq→delay (delay→Seq b) ≡ b
---   --   -- delay-Seq = M-coinduction (λ x → Seq→delay (delay→Seq x) ≡ x) ∞delay-Seq
+  -- subst P (funExt (λ {0 → refl ; (suc n) → refl})) (f (x 0) (x ∘ suc))
 
---   -- Seq-delay : ∀ {R} (b : Seq R) → delay→Seq (Seq→delay b) ≡ b
---   -- Seq-delay (g , q) = case g 0 of \{(inl r) -> refl ; (inr tt) -> delay→Seq (Seq→delay (g , q)) ≡⟨ cong shift (Seq-delay (unshift (g, q))) ⟩ shift-unshift (g, q) }
+  -- f-case_return_of_ : ∀ {ℓ ℓ'} {A : Type ℓ} (x : ℕ → A) (B : (f : ℕ → A) → (x ≡ f) → Type ℓ') → (∀ y y' → (p : x 0 ≡ y) → B x p) → B x refl
+  -- f-case x return P of f = f x refl
 
---   -- delay-Seq-Iso : ∀ {A} → Iso (delay A) (Seq A)
---   -- delay-Seq-Iso = (iso delay→Seq Seq→delay Seq-delay delay-Seq)
+  function-case_return_of_ : ∀ {ℓ ℓ'} {A : Type ℓ} (x : ℕ → A) → (B : (f : ℕ → A) → (x ≡ f) → Type ℓ') → ((a : A) → (a' : ℕ → A) → {p : x 0 ≡ a} {q : (n : ℕ) → x (suc n) ≡ a' n} → B (λ {0 → a ; (suc n) → a' n}) (funExt λ {0 → p ; (suc n) → q n})) → B x refl
+  function-case x return P of f =
+    transport (cong₂ P (funExt (λ {0 → refl ; (suc n) → refl})) λ { i j 0 → x 0 ; i j (suc n) → x (suc n) }) (f (x 0) (x ∘ suc) {refl} {λ n → refl}) 
+    -- transport (cong₂ P (funExt (λ {0 → refl ; (suc n) → refl})) λ { i j 0 → x 0 ; i j (suc n) → x (suc n) }) (f (x 0) {refl}) 
 
---   -- delay≡Seq : ∀ {A} → delay A ≡ Seq A
---   -- delay≡Seq = isoToPath delay-Seq-Iso
+  seq-case-g0_return_of_ : ∀ {ℓ} {R : Set} (b : Seq R) (P : Seq R → Type ℓ) f → P b
+  seq-case-g0 (g , q) return P of f =
+    subst P (ΣPathP (refl , substRefl {B = ismon} q)) (function-case g return (λ f x → P (f , subst ismon x q)) of f)
 
------------------------
--- Sequence ordering --
------------------------
+  postulate
+    Seq-delay : ∀ {R : Set} (b : Seq R) → delay→Seq (Seq→delay b) ≡ b
+  -- Seq-delay (g , q) = -- {!!}
+  -- -- case g 0 of \{(inl r) -> refl ; (inr tt) -> delay→Seq (Seq→delay (g , q)) ≡⟨ cong shift (Seq-delay (unshift (g, q))) ⟩ shift-unshift (g, q) }
+    
+    -- (case g 0 return
+    --   (λ x → delay→Seq (Seq→delay ((λ {0 → x ; (suc n) → g (suc n)}) , (λ {0 → q 0 ; (suc n) → q (suc n)}))) ≡ ((λ {0 → x ; (suc n) → g (suc n)}) , (λ {0 → q 0 ; (suc n) → q (suc n)}))) of
+    --   λ {(inl r) → refl
+    --     ;(inr tt) → delay→Seq (Seq→delay (g , q)) ≡⟨ cong {!!} (Seq-delay (unshift (g , q))) ⟩ shift-unshift (g , q)})
+    -- -- (λ a → shift-seq {!!} {!!})
+    -- -- case g 0 of \{(inl r) -> refl ; (inr tt) -> delay→Seq (Seq→delay (g , q)) ≡⟨ cong shift (Seq-delay (unshift (g, q))) ⟩ shift-unshift (g, q) }
+
+  delay-Seq-Iso : ∀ {A} → Iso (delay A) (Seq A)
+  delay-Seq-Iso = (iso delay→Seq Seq→delay Seq-delay delay-Seq)
+
+  delay≡Seq : ∀ {A} → delay A ≡ Seq A
+  delay≡Seq = isoToPath delay-Seq-Iso
+  
+  -----------------------
+  -- Sequence ordering --
+  -----------------------
+  
+  _↓seq_ : ∀ {A} → Seq A → A → Set
+  s ↓seq a = Σ[ n ∈ ℕ ] fst s n ≡ inl a
+  
+  _⊑seq_ : ∀ {A} → ∀ (_ _ : Seq A) → Set
+  _⊑seq_ {A} s t = (a : A) → ∥ (s ↓seq a) ∥ → ∥ t ↓seq a ∥
+
+  _∼seq_ : ∀ {A} → ∀ (_ _ : Seq A) → Set
+  s ∼seq t = s ⊑seq t × t ⊑seq s
+
+  -- TODO: show the equivalence lifts to the quotient!
+
+  ⊑seq-refl : ∀ {A : Set} (x : Seq A) → x ⊑seq x
+  ⊑seq-refl x = λ a → idfun ∥ x ↓seq a ∥
+
+  -- -- TODO
+  -- ∼delay→∼Seq : ∀ {A : Set} {x y : delay A} → x ∼delay y → (Iso.fun delay-Seq-Iso x) ∼seq (Iso.fun delay-Seq-Iso y)
+  -- ∼delay→∼Seq (∼now a) =
+  --   (⊑seq-refl (Iso.fun delay-Seq-Iso (delay-ret a))) ,
+  --   (⊑seq-refl (Iso.fun delay-Seq-Iso (delay-ret a)))
+  -- ∼delay→∼Seq (∼later-l t u p) = {!!}  
+  -- ∼Seq→∼delay : ∀ {A : Set} {x y : Seq A} → x ∼seq y → (Iso.inv delay-Seq-Iso x) ∼delay (Iso.inv delay-Seq-Iso y)
+  -- ∼Seq→∼delay p = {!!}
+
+  -- delay/∼≡Seq/∼ : delay / _∼delay_ ≡ Seq / _∼seq_
+  -- delay/∼≡Seq/∼ = ?
+
+------------------------
+-- Helper definitions --
+------------------------
 
 open import Cubical.Data.Nat.Order
-
-_↓seq_ : ∀ {A} → Seq A → A → Set
-s ↓seq a = Σ[ n ∈ ℕ ] fst s n ≡ inl a
-
-_⊑seq_ : ∀ {A} → ∀ (_ _ : Seq A) → Set
-_⊑seq_ {A} s t = (a : A) → ∥ (s ↓seq a) ∥ → ∥ t ↓seq a ∥
-
-_∼seq_ : ∀ {A} → ∀ (_ _ : Seq A) → Set
-s ∼seq t = s ⊑seq t × t ⊑seq s
 
 _↓′_ : ∀ {A} → Seq A → A → Set _
 (f , _) ↓′ y = Σ[ m ∈ ℕ ] ((f m ≡ inl y) × (∀ n → (f n ≡ inr tt → ⊥) → m ≤ n))
