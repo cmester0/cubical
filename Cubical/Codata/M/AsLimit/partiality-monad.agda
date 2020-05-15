@@ -124,7 +124,7 @@ module _ where
                  ⊎ ((g n ≡ inr tt) × ((g (suc n) ≡ inr tt) → ⊥))
 
   Seq : Set → Set
-  Seq A = (Σ (ℕ → A ⊎ Unit) (λ g → ismon g))
+  Seq A = (Σ[ g ∈ (ℕ → A ⊎ Unit) ] (ismon g))
 
   shift-seq : ∀ {A : Set} → (t : Seq A) → Σ (A ⊎ Unit) (λ va → ismon' (λ {0 → va ; (suc n) → fst t n}) 0) → Seq A
   shift-seq (g , a) (va , mon) = (λ {0 → va ; (suc n) → g n}) , (λ {0 → mon ; (suc n) → a n})
@@ -527,7 +527,7 @@ abstract
     Cubical.HITs.SetQuotients.elim {B = λ _ → B} (λ _ → B-set) f feq ar
 
   Seq/∼→⊥ : ∀ {A} → isSet A → (Seq A / _∼seq_) → < A >⊥
-  Seq/∼→⊥ {A} A-set = recc Seq→⊥ (λ x y → Seq→⊥-≈→≡ A-set x y) ⊥-isSet
+  Seq/∼→⊥ {A} A-set = recc Seq→⊥ (Seq→⊥-≈→≡ A-set) ⊥-isSet
 
   private -- useful property
     postulate -- TODO
