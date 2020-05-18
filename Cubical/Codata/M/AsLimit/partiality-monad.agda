@@ -111,17 +111,34 @@ mutual
 -- -- --            ;(inr tt) → inl refl}))
 
 --------------
+-- Maybe --
+--------------
+
+infix 4 _↑ _↓_
+
+-- x ↓ y means that the computation x has the value y.
+
+_↓_ : ∀ {A : Set} → A ⊎ Unit → A → Set
+x ↓ y = x ≡ inl y
+
+-- x ↑ means that the computation x does not have a value.
+                                                      
+_↑ :  ∀ {A : Set} → A ⊎ Unit → Set
+x ↑ = x ≡ inr tt
+
+LE : ∀ {A : Set} → A ⊎ Unit → A ⊎ Unit → Set
+LE x y = (x ≡ y) ⊎ ((x ↑) × (y ↑ → ⊥))
+
+--------------
 -- Sequence --
 --------------
 
 module _ where
   ismon : ∀ {A : Set} → (g : ℕ → A ⊎ Unit) → Set
-  ismon {A} g = (n : ℕ) → (g n ≡ g (suc n))
-              ⊎ ((g n ≡ inr tt) × ((g (suc n) ≡ inr tt) → ⊥))
+  ismon {A} g = (n : ℕ) → LE (g n) (g (suc n))
 
   ismon' : ∀ {A : Set} → (g : ℕ → A ⊎ Unit) → ℕ → Set
-  ismon' {A} g n = (g n ≡ g (suc n))
-                 ⊎ ((g n ≡ inr tt) × ((g (suc n) ≡ inr tt) → ⊥))
+  ismon' {A} g n = LE (g n) (g (suc n))
 
   Seq : Set → Set
   Seq A = (Σ[ g ∈ (ℕ → A ⊎ Unit) ] (ismon g))
@@ -156,12 +173,12 @@ module _ where
   abstract
     {-# NON_TERMINATING #-}
     mutual
-      ∞delay→Seq' : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A
-      ∞delay→Seq' {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
-      ∞delay→Seq' {A} (inr tt , t) = shift' (delay→Seq' (t tt))
-    
+      Pdelay→Seq' : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A
+      Pdelay→Seq' {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
+      Pdelay→Seq' {A} (inr tt , t) = shift' (delay→Seq' (t tt))
+
       delay→Seq' : ∀ {A} → (delay A) → Seq A
-      delay→Seq' {A} = M-coinduction-const (Seq A) ∞delay→Seq'
+      delay→Seq' {A} = M-coinduction-const (Seq A) Pdelay→Seq'
       
   ∞delay→Seq : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A  
   ∞delay→Seq {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
@@ -353,21 +370,6 @@ abstract
   Maybe→⊥ : ∀ {A : Type₀} → A ⊎ Unit → < A >⊥
   Maybe→⊥ (inr tt)  = never
   Maybe→⊥ (inl y) = η y
-
-  infix 4 _↑ _↓_
-
-  -- x ↓ y means that the computation x has the value y.
-
-  _↓_ : ∀ {A : Set} → A ⊎ Unit → A → Set
-  x ↓ y = x ≡ inl y
-
-  -- x ↑ means that the computation x does not have a value.
-
-  _↑ :  ∀ {A : Set} → A ⊎ Unit → Set
-  x ↑ = x ≡ inr tt
-
-  LE : ∀ {A : Set} → A ⊎ Unit → A ⊎ Unit → Set
-  LE x y = (x ≡ y) ⊎ ((x ↑) × (y ↑ → ⊥))
 
   Increasing-at : ∀ {A : Set} → ℕ → (ℕ → A ⊎ Unit) → Set
   Increasing-at n f = LE (f n) (f (suc n))
