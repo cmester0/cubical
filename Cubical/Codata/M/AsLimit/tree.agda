@@ -22,8 +22,84 @@ open import Cubical.Codata.M.AsLimit.Container
 -- open import Cubical.Codata.M.AsLimit.itree
 open import Cubical.Codata.M.AsLimit.M
 
--- Bottom element raised
+
+-- record temp {A : SEt} {B : Set} : Set where
+
+
+-- temp = λ (A : Type₀) → M ((A ⊎ Unit) × A , λ {(inl _ , _) → ⊥ ; (inr _ , _) → Unit})
 data ⊥₁ : Type₁ where
+
+record temp {A : Set} {B : Set} : Set₁ where
+  coinductive
+  field
+    hd : Type₀
+    hd' : hd -> Type₀
+    hd'' : (x : hd) → hd' x -> temp {A} {B}
+
+temp-construction = M ((Σ[ hd ∈ Type₀ ] (Σ[ hd' ∈ (hd → Type₀) ] Unit)) , λ {(hd , hd' , _) → Lift (Σ[ x ∈ hd ] hd' x)})
+
+hd-con : temp-construction → Type₀
+hd-con x = out-fun x .fst .fst
+
+hd-con' : (x : temp-construction) → hd-con x → Type₀
+hd-con' x y = out-fun x .fst .snd .fst y
+
+hd-con'' : (x : temp-construction) → (k : hd-con x) → hd-con' x k → temp-construction
+hd-con'' x y z = out-fun x .snd (lift (y , z))
+
+
+afds : Unit ⊎ Unit → Set
+afds (inl tt) = ℕ
+afds (inr tt) = Unit
+
+afds' : (Unit ⊎ Unit) → (Unit ⊎ Unit) → Set
+afds' x = _⊎_ (afds x) ∘ afds
+
+uncurry'
+  : ∀{ℓ ℓ′ ℓ″} {A : Type ℓ} {B : Type ℓ′} {C : A → B → Type ℓ″}
+  → ((x : A) → (y : B) → C x y)
+  → (p : A × B) → C (proj₁ p) (proj₂ p)
+uncurry' f (x , y) = f x y
+
+asfd = M ((Unit ⊎ Unit) × (Unit ⊎ Unit) , uncurry' afds')
+
+asfd'' = M (Unit ⊎ Unit , afds)
+
+as : asfd'' → Unit ⊎ Unit
+as x = out-fun x .fst
+
+as' : (x : asfd'') → afds (as x) → asfd''
+as' x y = out-fun x .snd y
+
+as''₁ : asfd → Unit ⊎ Unit
+as''₁ x = proj₁ (out-fun x .fst)
+
+as''₂ : asfd → Unit ⊎ Unit
+as''₂ x = proj₂ (out-fun x .fst)
+
+ksad : forall (x : asfd) -> (fst (out-fun x)) ≡ ((as''₁ x) , (as''₂ x))
+ksad (a , b) with fst (a (suc 0))
+... | (x , y) = refl
+
+as'''₁ : (x : asfd) → afds (as''₁ x) → asfd
+as'''₁ x@(a , b) y =
+  out-fun x .snd (subst (uncurry' afds') (sym (ksad x)) (inl y))
+  
+as'''₂ : (x : asfd) → afds (as''₂ x) → asfd
+as'''₂ x@(a , b) y =
+  out-fun x .snd (subst (uncurry' afds') (sym (ksad x)) (inr y))
+
+-- hd'temp : ∀ {A B} → temp {A} {B} → ((A → temp {A} {B}) × B)
+-- hd'temp x = {!!}
+
+-- ret : ∀ {A} → A × A → temp A 
+-- ret x = in-fun ((inl x , {!!}) , λ ())
+
+-- hd : ∀ {A} → temp A → A
+-- hd x = proj₂ (out-fun x .fst)
+
+-- Bottom element raised
+-- data ⊥₁ : Type₁ where
 
 -- TREES
 tree-S : Type₀ → Container (ℓ-zero)

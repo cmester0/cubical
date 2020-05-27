@@ -58,14 +58,14 @@ elim3 Pprop g = elim2 (λ _ _ → isPropΠ (λ _ → Pprop _ _ _))
 propTruncIsProp : isProp ∥ A ∥
 propTruncIsProp x y = squash x y
 
+propTruncIdempotentIso : isProp A → Iso ∥ A ∥ A
+Iso.fun (propTruncIdempotentIso {A = A} hA)        = rec hA (idfun A)
+Iso.inv (propTruncIdempotentIso _) x      = ∣ x ∣
+Iso.rightInv (propTruncIdempotentIso _) _ = refl
+Iso.leftInv (propTruncIdempotentIso _)    = elim (λ _ → isProp→isSet propTruncIsProp _ _) (λ _ → refl)
+
 propTruncIdempotent≃ : isProp A → ∥ A ∥ ≃ A
-propTruncIdempotent≃ {A = A} hA = isoToEquiv f
-  where
-  f : Iso ∥ A ∥ A
-  Iso.fun f        = rec hA (idfun A)
-  Iso.inv f x      = ∣ x ∣
-  Iso.rightInv f _ = refl
-  Iso.leftInv f    = elim (λ _ → isProp→isSet propTruncIsProp _ _) (λ _ → refl)
+propTruncIdempotent≃ hA = isoToEquiv (propTruncIdempotentIso hA)
 
 propTruncIdempotent : isProp A → ∥ A ∥ ≡ A
 propTruncIdempotent hA = ua (propTruncIdempotent≃ hA)
