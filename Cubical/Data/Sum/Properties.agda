@@ -85,11 +85,4 @@ isOfHLevelSum n lA lB c c' =
     (SumPath.isOfHLevelCover n lA lB c c')
 
 inl≢inr : ∀ {A : Set} {B : Set} → {x : A} {y : B} → inl x ≡ inr y → ⊥
-inl≢inr {A = A} {B} x =
-  subst caseSum (cong forgetValue x) (x i0)
-  where
-    caseSum : Unit ⊎ Unit → Set
-    caseSum = (λ {(inl tt) → A ⊎ B ; (inr tt) → ⊥})
-
-    forgetValue : A ⊎ B → Unit ⊎ Unit
-    forgetValue = (λ { (inl _) → inl tt ; (inr _) → inr tt })
+inl≢inr {A = A} {B} x = subst (λ {(inl x) → A ⊎ B ; (inr y) → ⊥}) x (x i0)

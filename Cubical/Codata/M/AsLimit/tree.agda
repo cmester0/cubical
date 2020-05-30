@@ -11,285 +11,156 @@ open import Cubical.Data.Empty
 open import Cubical.Data.Bool
 open import Cubical.Data.Sigma hiding (_×_)
 
-open import Cubical.HITs.PropositionalTruncation
+open import Cubical.HITs.PropositionalTruncation renaming (map to ∥map∥ ; elim to ∥elim∥ ; rec to ∥rec∥)
 open import Cubical.HITs.SetQuotients
 
 open import Cubical.Foundations.Isomorphism
 open import Cubical.Foundations.Function
 open import Cubical.Foundations.Equiv
+open import Cubical.Foundations.HLevels
+open import Cubical.Foundations.Univalence
 
-open import Cubical.Codata.M.AsLimit.Container
+open import Cubical.Functions.Embedding
+open import Cubical.Functions.Surjection
+open import Cubical.Functions.FunExtEquiv
+
+-- open import Cubical.Codata.M.AsLimit.Container
 -- open import Cubical.Codata.M.AsLimit.itree
-open import Cubical.Codata.M.AsLimit.M
+-- open import Cubical.Codata.M.AsLimit.M
+
+data T₀ : Set where
+  T₀-leaf : T₀
+  T₀-node : (ℕ → T₀) → T₀
+
+data _∼T₀_ : (_ _ : T₀) → Set where
+  leaf∼ : T₀-leaf ∼T₀ T₀-leaf
+  node∼ : {f g : ℕ → T₀} → ({n : ℕ} → f n ∼T₀ g n) → T₀-node f ∼T₀ T₀-node g
+  perm∼ : (g : ℕ → T₀) (f : ℕ → ℕ) → isEquiv f → T₀-node g ∼T₀ T₀-node (g ∘ f)
+
+data T : Set where
+    leaf : T
+    node : (ℕ → T) → T
+    perm : (g : ℕ → T) → (f : ℕ → ℕ) → isEquiv f → node g ≡ node (g ∘ f)
+
+-- makes life easier..
+postulate
+  T-isSet : isSet T
+  T₀-isProp : isProp T₀
+
+T₀→T : T₀ → T
+T₀→T T₀-leaf = leaf
+T₀→T (T₀-node f) = node (T₀→T ∘ f)
+
+∼-≡ : ∀ {a b} → a ∼T₀ b → T₀→T a ≡ T₀→T b
+∼-≡ (leaf∼) = refl
+∼-≡ (node∼ f) = cong node (funExt λ n → ∼-≡ (f {n}))
+∼-≡ (perm∼ g f p) = perm (T₀→T ∘ g) f p
+
+T₀/∼→T : T₀ / _∼T₀_ → T
+T₀/∼→T = Cubical.HITs.SetQuotients.elim (λ _ → T-isSet) T₀→T λ _ _ → ∼-≡
+
+postulate
+  asfd : isInjective node
+
+leaf≢node : ∀ {f} → leaf ≡ node f → ⊥
+leaf≢node x = subst (λ { leaf → T ; _ → ⊥ }) x (x i0)
+
+T₀→T-isInjective : ∀ {w x} → T₀→T w ≡ T₀→T x → w ∼T₀ x
+T₀→T-isInjective {w = T₀-leaf} {x = T₀-leaf} p = leaf∼
+T₀→T-isInjective {w = T₀-node f} {x = T₀-node g} p = node∼ λ {n} → (T₀→T-isInjective ∘ (Iso.inv funExtIso (asfd p))) n
+T₀→T-isInjective {w = T₀-node f} {x = T₀-leaf} p = Cubical.Data.Empty.rec (leaf≢node (sym p))
+T₀→T-isInjective {w = T₀-leaf} {x = T₀-node g} p = Cubical.Data.Empty.rec (leaf≢node p)
+
+T₀/∼→T-isInjective : isInjective T₀/∼→T
+T₀/∼→T-isInjective {x} {y} = -- {w = [ x ]} {x = [ y ]} 
+  elimProp
+    {A = T₀}
+    {R = _∼T₀_}
+    {B = λ x → T₀/∼→T x ≡ T₀/∼→T y → x ≡ y}
+    (λ x → isPropΠ λ _ → squash/ x y)
+    (λ x → elimProp
+               {A = T₀}
+               {R = _∼T₀_}
+               {B = λ y → T₀/∼→T [ x ] ≡ T₀/∼→T y → [ x ] ≡ y}
+               (λ y → isPropΠ λ _ → squash/ [ x ] y)
+               (λ y → eq/ x y ∘ T₀→T-isInjective)
+               y)
+    x
+
+Axiom-of-countable-choice : (ℓ : Level) → Set (ℓ-suc ℓ)
+Axiom-of-countable-choice ℓ = {B : ℕ → Set ℓ} → (∀ x → ∥ B x ∥) → ∥ (∀ x → B x) ∥
+
+T₀/∼→T-isSurjective : Axiom-of-countable-choice ℓ-zero → isSurjection T₀/∼→T
+T₀/∼→T-isSurjective _ leaf = ∣ [ T₀-leaf ] , refl ∣
+T₀/∼→T-isSurjective acc (node f) =
+  Iso.fun (propTruncIdempotentIso squash)
+  (∥map∥ (λ g →
+   ∥map∥ (λ x →
+     [ T₀-node (fst ∘ x) ] , cong node (funExt λ (n : ℕ) → cong T₀/∼→T (snd (x n)) ∙ (snd (g n))))
+   (acc (λ (n : ℕ) → []surjective (fst (g n)))))
+   (acc (T₀/∼→T-isSurjective acc ∘ f)))
+T₀/∼→T-isSurjective acc (perm a b e i) =
+  let temp : ∥ fiber T₀/∼→T (perm a b e i) ∥
+      temp =
+        -- Iso.fun (propTruncIdempotentIso squash)
+        (Iso.fun (propTruncIdempotentIso squash)
+          (∥map∥ (λ g →
+           ∥map∥ (λ x →
+             let temp' : T₀→T ∘ (fst ∘ x) ≡ a
+                 temp' = (funExt λ (n : ℕ) → cong T₀/∼→T (snd (x n)) ∙ (snd (g n))) in
+             let temps = ∼-≡ (perm∼ (fst ∘ x) b e) in
+             let temps' : node a ≡ node (a ∘ b)
+                 temps' = transport (λ j → node (temp' j) ≡ node (temp' j ∘ b)) temps in
+             -- let temps'' : temps' ≡ perm a b e
+             --     temps'' = T-isSet (node a) (node (a ∘ b)) temps' (perm a b e) in
+             -- let tempsss : T₀→T (T₀-node (fst ∘ x)) ≡ T₀→T (T₀-node (fst ∘ x ∘ b))
+             --     tempsss = T₀→T (T₀-node (fst ∘ x)) ≡⟨ cong node temp' ⟩ node a ≡⟨ temps' ⟩ node (a ∘ b) ≡⟨ cong (λ k → node (k ∘ b)) (sym temp') ⟩ T₀→T (T₀-node (fst ∘ x ∘ b)) ∎ in
+             let temasd : [ T₀-node (fst ∘ x) ] ≡ [ T₀-node (fst ∘ x ∘ b) ]
+                 temasd = eq/ (T₀-node (fst ∘ x)) (T₀-node (fst ∘ x ∘ b)) (perm∼ (fst ∘ x) b e)
+             in
+             let hd : node (T₀→T ∘ fst ∘ x) ≡ node (T₀→T ∘ fst ∘ x ∘ b)
+                 hd = node (T₀→T ∘ fst ∘ x) ≡⟨ cong node temp' ⟩ node a ≡⟨ temps' ⟩ node (a ∘ b) ≡⟨ cong (λ k → node (k ∘ b)) (sym temp') ⟩ node (T₀→T ∘ fst ∘ x ∘ b) ∎
+             in
+             -- let tesadf :
+             --            Square
+             --              (node a ≡⟨ temps' ⟩ node (a ∘ b) ∎)
+             --              (node (T₀→T ∘ fst ∘ x) ≡⟨ cong node {!!} ⟩ node (T₀→T ∘ fst ∘ x ∘ b) ∎)
+             --              (node a ≡⟨ cong node (sym temp') ⟩ T₀→T (T₀-node (fst ∘ x)) ∎)
+             --              (node (a ∘ b) ≡⟨ cong (λ k → node (k ∘ b)) (sym temp') ⟩ T₀→T (T₀-node (fst ∘ x ∘ b)) ∎)
+             --     tesadf = {!!}
+             -- in
+             -- hcomp (λ j → λ {(i = i0) → cong node temp' ; (i = i1) -> cong (\k -> node (k ∘ b)) temp'}) (elimEq/ {A = T₀} {R = _∼T₀_} {B = λ x → {!!}} (λ k → {!!}) {!!} {!!} {!!})
+               temasd i , {!!}
+             -- ∣ temasd i , compPath-filler {x = perm a b e} {y = {!!}} {z = {!!}} {!!} {!!} ? ? ∣
+             )
+             (acc (λ (n : ℕ) → []surjective (fst (g n)))))
+             (acc (T₀/∼→T-isSurjective acc ∘ a))))
+  in {!!}
 
 
--- record temp {A : SEt} {B : Set} : Set where
+  -- let temp'1 : ∥ fiber T₀/∼→T (node a) ∥
+  --     temp'1 = T₀/∼→T-isSurjective acc (node a) in -- ∥map∥ fst
+  -- let temp'2 : ∥ ((n : ℕ) -> fiber T₀/∼→T (a n)) ∥
+  --     temp'2 = acc (T₀/∼→T-isSurjective acc ∘ a) in
+  -- let temp'3 : ∥ (ℕ → T₀) ∥
+  --     temp'3 = ∥map∥ (λ x → fst ∘ x) {!!} in -- ∥map∥ fst
+  -- Iso.fun (propTruncIdempotentIso squash)
+  -- (∥map∥
+  --   (λ x → let temp = ∼-≡ (perm∼ x b e) in
+  --           let tempp = T₀/∼→T-isSurjective acc (temp i) in -- T₀→T ∘ x ≡ a
+  --           let temppp : T₀→T ∘ x ≡ a
+  --               temppp = {!!}
+  --           in
+  --   transport (λ j → ∥ fiber T₀/∼→T (perm (temppp j) b e i) ∥) tempp)
+  --   temp'3)
 
+-- node (λ x₁ → T₀→T (x x₁)) ≡ node (λ x₁ → T₀→T ((x ∘ b) x₁))
 
--- temp = λ (A : Type₀) → M ((A ⊎ Unit) × A , λ {(inl _ , _) → ⊥ ; (inr _ , _) → Unit})
-data ⊥₁ : Type₁ where
+  -- ∥ fiber T₀/∼→T (perm a b e i) ∥
+  -- Σ[ x ∈ A ] T₀/∼→T x ≡ (perm a b e i)
 
-record temp {A : Set} {B : Set} : Set₁ where
-  coinductive
-  field
-    hd : Type₀
-    hd' : hd -> Type₀
-    hd'' : (x : hd) → hd' x -> temp {A} {B}
-
-temp-construction = M ((Σ[ hd ∈ Type₀ ] (Σ[ hd' ∈ (hd → Type₀) ] Unit)) , λ {(hd , hd' , _) → Lift (Σ[ x ∈ hd ] hd' x)})
-
-hd-con : temp-construction → Type₀
-hd-con x = out-fun x .fst .fst
-
-hd-con' : (x : temp-construction) → hd-con x → Type₀
-hd-con' x y = out-fun x .fst .snd .fst y
-
-hd-con'' : (x : temp-construction) → (k : hd-con x) → hd-con' x k → temp-construction
-hd-con'' x y z = out-fun x .snd (lift (y , z))
-
-
-afds : Unit ⊎ Unit → Set
-afds (inl tt) = ℕ
-afds (inr tt) = Unit
-
-afds' : (Unit ⊎ Unit) → (Unit ⊎ Unit) → Set
-afds' x = _⊎_ (afds x) ∘ afds
-
-uncurry'
-  : ∀{ℓ ℓ′ ℓ″} {A : Type ℓ} {B : Type ℓ′} {C : A → B → Type ℓ″}
-  → ((x : A) → (y : B) → C x y)
-  → (p : A × B) → C (proj₁ p) (proj₂ p)
-uncurry' f (x , y) = f x y
-
-asfd = M ((Unit ⊎ Unit) × (Unit ⊎ Unit) , uncurry' afds')
-
-asfd'' = M (Unit ⊎ Unit , afds)
-
-as : asfd'' → Unit ⊎ Unit
-as x = out-fun x .fst
-
-as' : (x : asfd'') → afds (as x) → asfd''
-as' x y = out-fun x .snd y
-
-as''₁ : asfd → Unit ⊎ Unit
-as''₁ x = proj₁ (out-fun x .fst)
-
-as''₂ : asfd → Unit ⊎ Unit
-as''₂ x = proj₂ (out-fun x .fst)
-
-ksad : forall (x : asfd) -> (fst (out-fun x)) ≡ ((as''₁ x) , (as''₂ x))
-ksad (a , b) with fst (a (suc 0))
-... | (x , y) = refl
-
-as'''₁ : (x : asfd) → afds (as''₁ x) → asfd
-as'''₁ x@(a , b) y =
-  out-fun x .snd (subst (uncurry' afds') (sym (ksad x)) (inl y))
-  
-as'''₂ : (x : asfd) → afds (as''₂ x) → asfd
-as'''₂ x@(a , b) y =
-  out-fun x .snd (subst (uncurry' afds') (sym (ksad x)) (inr y))
-
--- hd'temp : ∀ {A B} → temp {A} {B} → ((A → temp {A} {B}) × B)
--- hd'temp x = {!!}
-
--- ret : ∀ {A} → A × A → temp A 
--- ret x = in-fun ((inl x , {!!}) , λ ())
-
--- hd : ∀ {A} → temp A → A
--- hd x = proj₂ (out-fun x .fst)
-
--- Bottom element raised
--- data ⊥₁ : Type₁ where
-
--- TREES
-tree-S : Type₀ → Container (ℓ-zero)
-tree-S X = (Unit ⊎ Unit) , (λ { (inl _) -> ⊥ ; (inr _) -> X } )
-
-tree : Type₀ → Type₀
-tree X = M (tree-S X)
-
-tree-leaf : ∀ {X} → tree X
-tree-leaf = in-fun (inl tt , λ ())
-
-tree-node : ∀ {X} -> (X -> tree X) -> tree X
-tree-node {X = X} k = in-fun (inr tt , k)
-
-mutual
-  data T (A : Set) : Set₁ where
-    T-leaf : T A
-    T-node : (A → ∞T A) → T A
-
-  record ∞T (A : Set) : Set₁ where
-    coinductive
-    field
-      force : T A
-
-open ∞T
-
-module lift-props where
-  private
-    variable
-      ℓ : Level
-      S : Container ℓ
-      x : M S
-
-  lift-x : {ℓ : Level} {S : Container ℓ} → (n : ℕ) → (x : M S) → Wₙ S n
-  lift-x 0 x = lift tt
-  lift-x (suc n) x = x .fst (suc n) .fst , λ x' → lift-x n x
-    
-  lift-π : {ℓ : Level} {S : Container ℓ} → (n : ℕ) → (x : M S) → πₙ S (lift-x (suc n) x) ≡ lift-x n x
-  lift-π 0 x = refl
-  lift-π (suc n) x i = {!!} , λ x' → lift-π n x i 
-
--- hte : ∀ X → Iso (tree X) (T X)
--- hte X = iso into outof {!!} {!!} -- into-outof outof-into
---   where
---     mutual
---       into : tree X → T X
---       into = M-coinduction-const (T X) Pinto
-
---       Pinto : P₀ (tree-S X) (tree X) → T X
---       Pinto (inl tt , _) = T-leaf
---       Pinto (inr tt , f) = T-node (∞into ∘ f)
-
---       ∞into : tree X → ∞T X
---       force (∞into x) = into x
-
---     outof : T X → tree X
---     outof T-leaf = tree-leaf
---     outof (T-node f) = lift-to-M lift-x lift-π (T-node f)
---       where
---         lift-x : (n : ℕ) (t : T X) → Wₙ (tree-S X) n
---         lift-x 0 t = lift tt
---         lift-x (suc n) (T-leaf) = inl tt , λ ()
---         lift-x (suc n) (T-node f) = inr tt , λ x → lift-x n (force (f x))
-
---         lift-π : (n : ℕ) (t : T X) → πₙ (tree-S X) (lift-x (suc n) t) ≡ lift-x n t
---         lift-π 0 t = refl
---         lift-π (suc n) (T-leaf) i = inl tt , (isContr→isProp isContr⊥→A (snd (πₙ (tree-S X) (lift-x (suc (suc n)) T-leaf))) λ ()) i
---         lift-π (suc n) (T-node f) i = (inr tt) , (λ x → lift-π n (force (f x)) i)
-
---     etarh : ∀ b → into (in-fun (inr tt , b)) ≡ T-node (∞into ∘ b)
---     etarh b = cong Pinto (out-inverse-in-x (inr tt , b))
-
---     outof-into : ∀ b → outof (into b) ≡ b
---     outof-into = M-coinduction (λ x → outof (into x) ≡ x)
---       λ {(inl tt , b) → cong in-fun (ΣPathP ( refl , isContr→isProp isContr⊥→A (λ ()) b))
---         ; (inr r , b) →
---           outof (into (in-fun (inr r , b)))
---             ≡⟨ cong outof (cong Pinto (out-inverse-in-x (inr tt , b))) ⟩
---           outof (T-node (∞into ∘ b))
---             ≡⟨ {!!} ⟩
---           in-fun (inr r , b) ∎}
-
-    -- into-outof : ∀ b → into (outof b) ≡ b
-    -- into-outof T-leaf = refl
-    -- into-outof (T-node f) =
-    --   into (outof (T-node f))
-    --     ≡⟨ refl ⟩
-    --   T-node {!!}
-    --     ≡⟨ {!!} ⟩
-    --   T-node f ∎
-
--- (λ x →
---        ∞into
---        ((λ n →
---            fst
---            (Iso.fun
---             (Σ-ap-iso
---              (Cubical.Foundations.Transport.pathToIso
---               (λ i →
---                  (n₁ : ℕ) →
---                  funExt
---                  (λ n₂ i₁ →
---                     snd (tree-S X)
---                     (Cubical.Codata.M.AsLimit.M.Base.α-iso-step-5-Iso-helper0
---                      (fst (tree-S X)) (snd (tree-S X))
---                      (λ n₃ →
---                         Cubical.Codata.M.AsLimit.tree.lift-x f (suc n₃) (T-node f) .fst)
---                      (λ n₃ i₂ →
---                         Cubical.Codata.M.AsLimit.tree.lift-π f (suc n₃) (T-node f) i₂ .fst)
---                      n₂ i₁) →
---                     Wₙ (fst (tree-S X) , snd (tree-S X)) n₂)
---                  i n₁))
---              (λ u →
---                 Cubical.Foundations.Transport.pathToIso
---                 (λ i →
---                    (n₁ : ℕ) →
---                    funExt
---                    (λ n₂ →
---                       isoToPath
---                       (Cubical.Codata.M.AsLimit.M.Base.α-iso-step-5-Iso-helper1-Iso
---                        (fst (tree-S X)) (snd (tree-S X))
---                        (λ n₃ →
---                           Cubical.Codata.M.AsLimit.tree.lift-x f (suc n₃) (T-node f) .fst)
---                        (λ n₃ i₁ →
---                           Cubical.Codata.M.AsLimit.tree.lift-π f (suc n₃) (T-node f) i₁ .fst)
---                        u n₂))
---                    i n₁)))
---             ((λ n₁ →
---                 Cubical.Codata.M.AsLimit.tree.lift-x f (suc n₁) (T-node f) .snd)
---              ,
---              (λ n₁ i →
---                 Cubical.Codata.M.AsLimit.tree.lift-π f (suc n₁) (T-node f) i
---                 .snd)))
---            n x)
---         ,
---         (λ n i →
---            snd
---            (Iso.fun
---             (Σ-ap-iso
---              (Cubical.Foundations.Transport.pathToIso
---               (λ i₁ →
---                  (n₁ : ℕ) →
---                  funExt
---                  (λ n₂ i₂ →
---                     snd (tree-S X)
---                     (Cubical.Codata.M.AsLimit.M.Base.α-iso-step-5-Iso-helper0
---                      (fst (tree-S X)) (snd (tree-S X))
---                      (λ n₃ →
---                         Cubical.Codata.M.AsLimit.tree.lift-x f (suc n₃) (T-node f) .fst)
---                      (λ n₃ i₃ →
---                         Cubical.Codata.M.AsLimit.tree.lift-π f (suc n₃) (T-node f) i₃ .fst)
---                      n₂ i₂) →
---                     Wₙ (fst (tree-S X) , snd (tree-S X)) n₂)
---                  i₁ n₁))
---              (λ u →
---                 Cubical.Foundations.Transport.pathToIso
---                 (λ i₁ →
---                    (n₁ : ℕ) →
---                    funExt
---                    (λ n₂ →
---                       isoToPath
---                       (Cubical.Codata.M.AsLimit.M.Base.α-iso-step-5-Iso-helper1-Iso
---                        (fst (tree-S X)) (snd (tree-S X))
---                        (λ n₃ →
---                           Cubical.Codata.M.AsLimit.tree.lift-x f (suc n₃) (T-node f) .fst)
---                        (λ n₃ i₂ →
---                           Cubical.Codata.M.AsLimit.tree.lift-π f (suc n₃) (T-node f) i₂ .fst)
---                        u n₂))
---                    i₁ n₁)))
---             ((λ n₁ →
---                 Cubical.Codata.M.AsLimit.tree.lift-x f (suc n₁) (T-node f) .snd)
---              ,
---              (λ n₁ i₁ →
---                 Cubical.Codata.M.AsLimit.tree.lift-π f (suc n₁) (T-node f) i₁
---                 .snd)))
---            n i x)))
-
-
--- data _∼tree_ {X} : (_ _ : tree X) → Type (ℓ-suc ℓ-zero) where
---   ∼leaf : tree-leaf ∼tree tree-leaf
---   ∼node :
---     ∀ (a b : X → tree X)
---     → (∀ x → a x ∼tree b x)
---     → tree-node a ∼tree tree-node b
---   ∼rel : (e : X → X) → isEquiv e → (f : X → tree X) → tree-node f ∼tree tree-node (f ∘ e)
-
--- adfs : Type₀ → Type₁
--- adfs X = tree X / _∼tree_
-
--- data TQ (A : Set) : Set₁ where
---   leaf : TQ A
---   node : (A → TQ A) → TQ A
---   mix : (e : A → A) → isEquiv e → (f : A → TQ A) → node f ≡ node (f ∘ e)
+  -- ∥rec∥ {!!} (λ x → ∣ {!!} , {!!} ∣) temp'3
+  -- ∥map∥ (λ x → perm∼ x b e) (temp'3)
+    -- rec2 {!!} (λ x x₁ → ∣ squash/ x x₁ {!!} {!!} {!!} {!!} , {!!} ∣) {!!} {!!}
+    -- ∥ fiber T₀/∼→T (perm a b e i) ∥
+  -- ∥map∥ {!!} (acc (T₀/∼→T-isSurjective acc ∘ a))

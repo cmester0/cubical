@@ -56,7 +56,7 @@ elim3 Pprop g = elim2 (λ _ _ → isPropΠ (λ _ → Pprop _ _ _))
                       (λ a b → elim (λ _ → Pprop _ _ _) (g a b))
 
 propTruncIsProp : isProp ∥ A ∥
-propTruncIsProp x y = squash x y
+propTruncIsProp = squash
 
 propTruncIdempotentIso : isProp A → Iso ∥ A ∥ A
 Iso.fun (propTruncIdempotentIso {A = A} hA)        = rec hA (idfun A)

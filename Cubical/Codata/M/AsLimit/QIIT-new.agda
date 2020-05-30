@@ -24,7 +24,6 @@ open import Cubical.Codata.M.AsLimit.Container
 open import Cubical.Codata.M.AsLimit.M
 -- open import Cubical.Codata.M.AsLimit.itree
 
-
 open import Cubical.HITs.SetQuotients renaming (elim to /elim)
 open import Cubical.HITs.PropositionalTruncation renaming (map to ∥map∥ ; elim to ∥elim∥)
 
@@ -42,17 +41,6 @@ data bTp : Set where
     node : (ℕ → bTp) → bTp
     perm : (f : ℕ → bTp) → (g : ℕ → ℕ) → isEquiv g → node f ≡ node (f ∘ g)
     bTp-isSet : isSet bTp
-
-module ElimT
-  (Tᴹ : bTp → Set)
-  (leafᴹ : Tᴹ leaf)
-  (nodeᴹ : {f : ℕ → bTp} → (fᴹ : (n : ℕ) → Tᴹ (f n)) → Tᴹ (node f))
-  (permᴹ : {g : ℕ → bTp} (gᴹ : (n : ℕ) → Tᴹ (g n)) → (f : ℕ → ℕ) (p : isEquiv f)
-         → PathP (λ x → Tᴹ (perm g f p x)) (nodeᴹ gᴹ) (nodeᴹ (gᴹ ∘ f))) where
-    Elim : (t : bTp) → Tᴹ t
-    Elim leaf = leafᴹ
-    Elim (node f) = nodeᴹ (λ n → Elim (f n))
-    Elim (perm g f p x) = permᴹ (λ n → Elim (g n)) f p x
 
 bT→bTp : bT → bTp
 bT→bTp bleaf = leaf
@@ -108,6 +96,17 @@ private
   Axiom-of-countable-choice : (ℓ : Level) → Set (ℓ-suc ℓ)
   Axiom-of-countable-choice ℓ = {B : ℕ → Set ℓ} → (∀ x → ∥ B x ∥) → ∥ (∀ x → B x) ∥
   
+module ElimT
+  (Tᴹ : bTp → Set)
+  (leafᴹ : Tᴹ leaf)
+  (nodeᴹ : {f : ℕ → bTp} → (fᴹ : (n : ℕ) → Tᴹ (f n)) → Tᴹ (node f))
+  (permᴹ : {g : ℕ → bTp} (gᴹ : (n : ℕ) → Tᴹ (g n)) → (f : ℕ → ℕ) (p : isEquiv f)
+         → PathP (λ x → Tᴹ (perm g f p x)) (nodeᴹ gᴹ) (nodeᴹ (gᴹ ∘ f))) where
+    Elim : (t : bTp) → Tᴹ t
+    Elim leaf = leafᴹ
+    Elim (node f) = nodeᴹ (λ n → Elim (f n))
+    Elim (perm g f p x) = permᴹ (λ n → Elim (g n)) f p x
+
 bT/∼→bTp-isSurjection : isSurjection bT/∼→bTp
 bT/∼→bTp-isSurjection =
   ElimT.Elim
