@@ -38,11 +38,11 @@ in-out-id {x = x} {y} i = (in-inverse-out i x) ≡ (in-inverse-out i y)
 
 -- constructor properties
 
-in-inj : ∀ {ℓ} {S : Container ℓ} {Z : Type ℓ} -> ∀ {f g : Z → P₀ S (M S)} -> (in-fun ∘ f ≡ in-fun ∘ g) ≡ (f ≡ g)
-in-inj {ℓ} {S = S} {Z = Z} {f = f} {g = g} = iso→fun-Injection-Path {ℓ = ℓ} {A = P₀ S (M S)} {B = M S} {C = Z} (shift-iso S) {f = f} {g = g}
+-- in-inj : ∀ {ℓ} {S : Container ℓ} {Z : Type ℓ} -> ∀ {f g : Z → P₀ S (M S)} -> (in-fun ∘ f ≡ in-fun ∘ g) ≡ (f ≡ g)
+-- in-inj {ℓ} {S = S} {Z = Z} {f = f} {g = g} = iso→fun-Injection-Path {ℓ = ℓ} {A = P₀ S (M S)} {B = M S} {C = Z} (shift-iso S) {f = f} {g = g}
 
-out-inj : ∀ {ℓ} {S : Container ℓ} {Z : Type ℓ} -> ∀ {f g : Z → M S} -> (out-fun ∘ f ≡ out-fun ∘ g) ≡ (f ≡ g)
-out-inj {ℓ} {S = S} {Z = Z} {f = f} {g = g} = iso→inv-Injection-Path {ℓ = ℓ} {A = P₀ S (M S)} {B = M S} {C = Z} (shift-iso S) {f = f} {g = g}
+-- out-inj : ∀ {ℓ} {S : Container ℓ} {Z : Type ℓ} -> ∀ {f g : Z → M S} -> (out-fun ∘ f ≡ out-fun ∘ g) ≡ (f ≡ g)
+-- out-inj {ℓ} {S = S} {Z = Z} {f = f} {g = g} = iso→inv-Injection-Path {ℓ = ℓ} {A = P₀ S (M S)} {B = M S} {C = Z} (shift-iso S) {f = f} {g = g}
 
 in-inj-x : ∀ {ℓ} {S : Container ℓ} -> ∀ {x y : P₀ S (M S)} -> (in-fun x ≡ in-fun y) ≡ (x ≡ y)
 in-inj-x {ℓ} {S = S} {x = x} {y} = iso→fun-Injection-Path-x (shift-iso S)

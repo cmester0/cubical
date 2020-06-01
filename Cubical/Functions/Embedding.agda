@@ -149,3 +149,12 @@ isEmbedding→Injection :
   ∀ x → (a (f x) ≡ a (g x)) ≡ (f x ≡ g x)
 isEmbedding→Injection a e {f = f} {g} x = sym (ua (cong a , e (f x) (g x)))
 
+isEmbedding→Injection-x :
+  ∀ {ℓ} {A B : Type ℓ}
+  → (a : A -> B)
+  → (e : isEmbedding a)
+  ----------------------
+  → ∀ {x y : A} 
+  → (a x ≡ a y) ≡ (x ≡ y)
+isEmbedding→Injection-x a e {x = x} {y = y} = sym (ua (cong a , e x y))
+
