@@ -133,12 +133,29 @@ b→T-surjective {X = X} acc =
     (λ x → ∣ (leaf x) , refl ∣)
     (λ f → ∥map∥ (λ x → (node (fst ∘ x)) , (node (b→T ∘ (fst ∘ x)) ≡⟨ (λ i → node (funExt (snd ∘ x) i)) ⟩ node f ∎)) (acc (λ (n : ℕ) → b→T-surjective acc (f n))) )
 
+-- {-# NON_TERMINATING #-}
+-- b/∼→T-surjective : ∀ {X} → Axiom-of-countable-choice ℓ-zero → isSurjection (b/∼→T {X = X})
+-- b/∼→T-surjective {X = X} acc =
+--   T-elim (λ x → ∥ fiber b/∼→T x ∥) (λ _ → propTruncIsProp)
+--     (λ x → ∣ [ leaf x ] , refl ∣)
+--     (λ f → ∥map∥ (λ x → ([ node (fst ∘ x) ]) , (node (b→T ∘ (fst ∘ x)) ≡⟨ (λ i → node (funExt (snd ∘ x) i)) ⟩ node f ∎)) (acc (λ (n : ℕ) → b→T-surjective acc (f n))))
+
 {-# NON_TERMINATING #-}
 b/∼→T-surjective : ∀ {X} → Axiom-of-countable-choice ℓ-zero → isSurjection (b/∼→T {X = X})
 b/∼→T-surjective {X = X} acc =
   T-elim (λ x → ∥ fiber b/∼→T x ∥) (λ _ → propTruncIsProp)
-    (λ x → ∣ [ leaf x ] , refl ∣)
-    (λ f → ∥map∥ (λ x → ([ node (fst ∘ x) ]) , (node (b→T ∘ (fst ∘ x)) ≡⟨ (λ i → node (funExt (snd ∘ x) i)) ⟩ node f ∎)) (acc (λ (n : ℕ) → b→T-surjective acc (f n))))
+    (λ x → ∣ [ leaf x ] , refl {x = leaf x} ∣)
+    (λ f →
+      let temp = (b/∼→T-surjective acc ∘ f) in
+      equivFun (propTruncIdempotent≃ propTruncIsProp)
+        (∥map∥ (λ x →
+               ∥map∥ (λ g →
+                     [ node (fst ∘ g) ] ,
+                     {!!}
+                     --(node (b/∼→T ∘ [_] ∘ fst ∘ g) ≡⟨ (λ i → (node (b/∼→T ∘ (funExt (snd ∘ g)) i))) ⟩ node (b/∼→T ∘ fst ∘ x) ≡⟨ (λ i → node (funExt (snd ∘ x) i)) ⟩ node f ∎ )
+                     )
+                 (acc (λ n → []surjective (x n .fst))))
+               (acc (b/∼→T-surjective acc ∘ f))))
 
 b/∼≡T : ∀ {X} → Axiom-of-countable-choice ℓ-zero → b X / _∼_ ≡ T X
 b/∼≡T {X = X} acc = ua (b/∼→T , (isEmbedding×isSurjection→isEquiv (injEmbedding squash/ T-isSet (b/∼→T-injective X) , b/∼→T-surjective acc)))
