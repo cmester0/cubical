@@ -21,7 +21,7 @@ open import Cubical.Codata.M.AsLimit.itree
 open import Cubical.Codata.M.AsLimit.M
 
 open import Cubical.HITs.PropositionalTruncation renaming (map to ∥map∥)
-open import Cubical.HITs.SetQuotients
+open import Cubical.HITs.SetQuotients renaming (elim to elim/)
 
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.Isomorphism
@@ -170,15 +170,14 @@ module _ where
 ----------------------------------
 
 module _ where
-  abstract
-    {-# NON_TERMINATING #-}
-    mutual
-      Pdelay→Seq' : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A
-      Pdelay→Seq' {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
-      Pdelay→Seq' {A} (inr tt , t) = shift' (delay→Seq' (t tt))
+  {-# NON_TERMINATING #-}
+  mutual
+    Pdelay→Seq' : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A
+    Pdelay→Seq' {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
+    Pdelay→Seq' {A} (inr tt , t) = shift' (delay→Seq' (t tt))
 
-      delay→Seq' : ∀ {A} → (delay A) → Seq A
-      delay→Seq' {A} = M-coinduction-const (Seq A) Pdelay→Seq'
+    delay→Seq' : ∀ {A} → (delay A) → Seq A
+    delay→Seq' {A} = M-coinduction-const (Seq A) Pdelay→Seq'
       
   ∞delay→Seq : ∀ {A} → P₀ (delay-S A) (delay A) → Seq A  
   ∞delay→Seq {A} (inl a , _) = (λ _ → inl a) , (λ _ → inl refl)
@@ -187,26 +186,8 @@ module _ where
   delay→Seq : ∀ {A} → (delay A) → Seq A
   delay→Seq {A} = M-coinduction-const (Seq A) ∞delay→Seq
 
-  -- -- -- TODO : this should equal (delay-tau (Seq→delay' (unshift (g , q))))
-  -- -- private
-  -- --   lift-x : ∀ {A} → Seq A → (n : ℕ) → Wₙ (delay-S A) n
-  -- --   lift-x (g , q) 0 = lift tt
-  -- --   lift-x (g , q) (suc n) = g 0 , λ _ → lift-x (unshift (g , q)) n
-
-  -- --   lift-π : ∀ {A} → (t : Seq A) → (n : ℕ) → πₙ (delay-S A) (lift-x t (suc n)) ≡ (lift-x t n)
-  -- --   lift-π (g , q) 0 = refl {x = lift tt}
-  -- --   lift-π (g , q) (suc n) i = g 0 , λ _ → lift-π (unshift (g , q)) n i
-                                              
-  -- -- Seq→delay : ∀ {A} → Seq A → delay A
-  -- -- Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → (lift-x (g , q)) , (lift-π (g , q))}
-
-  abstract
-    {-# NON_TERMINATING #-}
-    Seq→delay' : ∀ {A} → Seq A → delay A
-    Seq→delay' (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay' (unshift (g , q)))}
-  
   Seq→delay : ∀ {A} → Seq A → delay A
-  Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay' (unshift (g , q)))}
+  Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay (unshift (g , q)))}
   
   postulate
     ∞delay-Seq : ∀ {R} (b : P₀ (delay-S R) (delay R)) → Seq→delay (delay→Seq (in-fun b)) ≡ (in-fun b)
