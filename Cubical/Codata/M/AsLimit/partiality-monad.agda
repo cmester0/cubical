@@ -47,69 +47,6 @@ mutual
     field
       force : x ∼delay y
 
--- Alternative definition of sequences
-
--- ismon : ∀ {A : Set} → (g : ℕ → A ⊎ Unit) → Set
--- ismon {A} g = (n : ℕ) → (g n ≡ g (suc n))
---             ⊎ ((g n ≡ inr tt) × ((g (suc n) ≡ inr tt) → ⊥))
-
--- ismon' : ∀ {A : Set} → (g : ℕ → A ⊎ Unit) → ℕ → Set
--- ismon' {A} g n = (g n ≡ g (suc n))
---                ⊎ ((g n ≡ inr tt) × ((g (suc n) ≡ inr tt) → ⊥))
-
--- record seq (A : Type₀) : Type₀ where
---   field
---     function : ℕ → A ⊎ Unit
---     monotone : ismon function
-
--- open seq
-
--- mutual
---   f-delay-seq' : ∀ {A} → (delay A) → (ℕ → A ⊎ Unit)
---   f-delay-seq' {A} = M-coinduction-const (ℕ → A ⊎ Unit) f-delay→seq
-
---   f-delay→seq : ∀ {A} → P₀ (delay-S A) (delay A) → (ℕ → A ⊎ Unit)
---   f-delay→seq (inl r , b) _ = inl r
---   f-delay→seq (inr r , b) 0 = inr r
---   f-delay→seq (inr r , b) (suc n) = f-delay-seq' (b tt) n
-  
--- mutual
---   m-delay-seq' : ∀ {A} → (x : delay A) → ismon (f-delay-seq' {A} x)
---   m-delay-seq' {A} x = M-coinduction (λ y → ismon (f-delay-seq' {A} y)) m-delay-seq x
-
---   m-delay-seq : ∀ {A} → (x : P₀ (delay-S A) (M (delay-S A))) → ismon (f-delay-seq' (in-fun x))
---   m-delay-seq (inl r , b) = λ _ → inl refl
---   m-delay-seq (inr r , b) 0 = M-coinduction-const (ismon' (f-delay-seq' (in-fun (inr r , b))) 0) (λ {(inl _ , b) → ? ; (inr _ , b) → ?}) (b tt)
--- -- first element never defined if delay is later! , seq 0 = inr r , inl ?
---   m-delay-seq (inr r , b) (suc n) = {!!} -- case fst (f-delay-seq (b tt) n) 0 of ? -- when is the change defined ?? 
-  
--- -- delay→seq : ∀ {A} → (delay A) → seq A
--- -- function (delay→seq {A} x) = f-delay-seq' x
--- -- monotone (delay→seq {A} x) = m-delay-seq' x
-
--- --   -- shift-seq : ∀ {A} → (t : Seq A) → Σ (A ⊎ Unit) (λ va → ismon' (λ {0 → va ; (suc n) → fst t n}) 0) → Seq A
--- --   -- shift-seq (g , a) (va , mon) = (λ {0 → va ; (suc n) → g n}) ,
--- --   -- monotone (λ {0 → mon ; (suc n) → a n})
-
--- --   -- shift' : ∀ {A} → Seq A → Seq A
--- --   -- shift' t =
--- --   --   shift-seq t
--- --   --     ((inr tt) ,
--- --   --      (case (fst t 0) return (λ x → ismon' (λ { 0 → (inr tt) ; (suc 0) → x ; (suc (suc n)) → fst t n }) 0) of
--- --   --        λ {(inl r) → inr (refl , inl≢inr)
--- --   --          ;(inr tt) → inl refl}))
-
--- -- --     ∞delay→seq : ∀ {A} → P₀ (delay-S A) (delay A) → seq A
--- -- --     function (∞delay→seq {A} (inl a , _)) = (λ _ → inl a)
--- -- --     monotone (∞delay→seq {A} (inl a , _)) = (λ _ → inl refl)
--- -- --     function (∞delay→seq {A} (inr tt , t)) = (λ {0 → inr tt ; (suc n) → function (delay→seq (t tt)) n})
--- -- --     monotone (∞delay→seq {A} (inr tt , t)) = monotone shift' (delay→Seq (t tt))
-
--- -- -- ((inr tt) ,
--- -- --        (case (fst t 0) return (λ x → ismon' (λ { 0 → (inr tt) ; (suc 0) → x ; (suc (suc n)) → fst t n }) 0) of
--- -- --          λ {(inl r) → inr (refl , inl≢inr)
--- -- --            ;(inr tt) → inl refl}))
-
 --------------
 -- Maybe --
 --------------
@@ -139,6 +76,9 @@ module _ where
 
   ismon' : ∀ {A : Set} → (g : ℕ → A ⊎ Unit) → ℕ → Set
   ismon' {A} g n = LE (g n) (g (suc n))
+
+  -- Seq' : Set → Set
+  -- Seq' = M ?
 
   Seq : Set → Set
   Seq A = (Σ[ g ∈ (ℕ → A ⊎ Unit) ] (ismon g))
@@ -186,6 +126,7 @@ module _ where
   delay→Seq : ∀ {A} → (delay A) → Seq A
   delay→Seq {A} = M-coinduction-const (Seq A) ∞delay→Seq
 
+  {-# NON_TERMINATING #-}
   Seq→delay : ∀ {A} → Seq A → delay A
   Seq→delay (g , q) = case g 0 of λ {(inl r) → delay-ret r ; (inr tt) → delay-tau (Seq→delay (unshift (g , q)))}
   
