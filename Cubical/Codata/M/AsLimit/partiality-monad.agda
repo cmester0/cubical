@@ -21,7 +21,7 @@ open import Cubical.Codata.M.AsLimit.itree
 open import Cubical.Codata.M.AsLimit.M
 
 open import Cubical.HITs.PropositionalTruncation renaming (map to ∥map∥)
-open import Cubical.HITs.SetQuotients renaming (elim to elim/)
+open import Cubical.HITs.SetQuotients renaming (elim to elim/ ; rec to rec/)
 
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.Isomorphism
@@ -450,17 +450,18 @@ Seq→⊥-mono A-set x@(f , _) y@(g , _) x⊑y =
 Seq→⊥-≈→≡ : ∀ {A} → isSet A → ∀ (x y : Seq A) → x ∼seq y → Seq→⊥ x ≡ Seq→⊥ y
 Seq→⊥-≈→≡ A-set x y (p , q) = α (Seq→⊥-mono A-set x y p) (Seq→⊥-mono A-set y x q)
 
-recc :
-  ∀ {A B : Set} {R : A → A → Set}
-  → (f : A → B)
-  → (∀ x y → R x y → f x ≡ f y)
-  → isSet B
-  → A / R → B
-recc {A} {B} {R} f feq B-set ar =
-    Cubical.HITs.SetQuotients.elim {B = λ _ → B} (λ _ → B-set) f feq ar
+-- recc :
+--   ∀ {A B : Set} {R : A → A → Set}
+--   → (f : A → B)
+--   → (∀ x y → R x y → f x ≡ f y)
+--   → isSet B
+--   → A / R → B
+-- recc {A} {B} {R} f feq B-set ar =
+--     Cubical.HITs.SetQuotients.elim {B = λ _ → B} (λ _ → B-set) f feq ar
+-- recc = rec/
 
 Seq/∼→⊥ : ∀ {A} → isSet A → (Seq A / _∼seq_) → < A >⊥
-Seq/∼→⊥ {A} A-set = recc Seq→⊥ (Seq→⊥-≈→≡ A-set) ⊥-isSet
+Seq/∼→⊥ {A} A-set = rec/ Seq→⊥ (Seq→⊥-≈→≡ A-set) ⊥-isSet
 
 private -- useful property
   postulate -- TODO

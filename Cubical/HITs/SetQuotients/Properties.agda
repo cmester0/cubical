@@ -35,6 +35,19 @@ private
     R : A → A → Type ℓ'
     B : A / R → Type ℓ''
 
+rec :
+  ∀ {ℓ} {A B : Type ℓ} {R : A → A → Type ℓ}
+  → (f : A → B)
+  → (∀ x y → R x y → f x ≡ f y)
+  → isSet B
+  → A / R → B
+rec {A = A} {B} {R} f feq B-set x = rec' x
+ where
+   rec' : A / R → B
+   rec' [ x ] = f x
+   rec' (eq/ a b r i) = feq a b r i
+   rec' (squash/ a b p q i j) = B-set (rec' a) (rec' b) (cong rec' p) (cong rec' q) i j
+
 elimEq/ : (Bprop : (x : A / R ) → isProp (B x))
           {x y : A / R}
           (eq : x ≡ y)
