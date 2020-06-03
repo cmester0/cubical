@@ -1,4 +1,4 @@
-{-# OPTIONS --cubical --guardedness --safe #-}
+{-# OPTIONS --cubical --guardedness #-}
 
 module Cubical.Codata.M.AsLimit.QIIT-examples where
 
@@ -11,6 +11,7 @@ open import Cubical.Data.Sigma hiding (_×_)
 open import Cubical.Data.Bool
 
 open import Cubical.Foundations.Function
+open import Cubical.Foundations.Isomorphism
 open import Cubical.Foundations.Equiv
 open import Cubical.Foundations.Prelude
 
@@ -65,17 +66,38 @@ P₁-Q S {X = X} {Y = Y} ∼ₛ ∼ₛ-comp f (a , g) =
     (λ x y r → eq/ (f ∘ x) (f ∘ y) (∼ₛ-comp f r))
     g
 
-poly-quot' : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → Set (ℓ-suc ℓ)
-poly-quot' {ℓ} S R R-comm =
-  Σ[ abs ∈ ({X : Set ℓ} → P₀ S X → P₀-Q S R X) ]
-    ((∀ {X} → isSurjection (abs {X})) × ({X Y : Set ℓ} (f : X → Y) (x : P₀ S X) → abs (P₁ f x) ≡ P₁-Q S R R-comm f (abs x)))
+Wₙ' : ∀ {ℓ} -> (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) -> ℕ -> Type ℓ
+Wₙ' S R 0 = Lift Unit
+Wₙ' S R (suc n) = P₀-Q S R (Wₙ S n)
 
-poly-quot : ∀ {ℓ} → (S : Container ℓ) → Set (ℓ-suc ℓ)
-poly-quot {ℓ} S =
-  Σ[ F₀ ∈ (Type ℓ -> Type ℓ)]
-  Σ[ F₁ ∈ ({X Y : Set ℓ} (f : X → Y) → F₀ X → F₀ Y)]
-  Σ[ abs ∈ ({X : Set ℓ} → P₀ S X → F₀ X) ]
-    ((∀ {X} → isSurjection (abs {X})) × ({X Y : Set ℓ} (f : X → Y) (x : P₀ S X) → abs (P₁ f x) ≡ F₁ f (abs x)))
+πₙ' : ∀ {ℓ} -> (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) -> {n : ℕ} -> Wₙ' S R (suc n) -> Wₙ' S R n
+πₙ' _ _ _ {0} _ = lift tt
+πₙ' S R R-comm {suc n} = P₁-Q S R R-comm (πₙ S {n})
+
+sequence' : ∀ {ℓ} -> (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) -> Chain ℓ
+X (sequence' S R R-comm) n = Wₙ' S R n
+π (sequence' S R R-comm) {n} = πₙ' S R R-comm {n}
+
+QM : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → Type ℓ
+QM S R R-comm = limit-of-chain (sequence' S R R-comm)
+
+poly-quot : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → Set (ℓ-suc ℓ)
+poly-quot {ℓ} S R R-comm =
+  Σ[ abs ∈ ({X : Set ℓ} → P₀ S X → P₀-Q S R X) ]
+    ((∀ {X} → isSurjection (abs {X})) × ({X Y : Set ℓ} (f : X → Y) (x : P₀ S X) → abs (P₁ f x) ≡ P₁-Q S R R-comm f (abs x))) -- Is one of these properties not enought?
+
+postulate
+  shift-quotient : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → Iso (QM S R R-comm) (P₀-Q S R (QM S R R-comm))
+
+Q-in-fun : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → (P₀-Q S R (QM S R R-comm)) → (QM S R R-comm)
+Q-in-fun S R R-comm x = Iso.inv (shift-quotient S R R-comm) x
+
+Q-out-fun : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → (QM S R R-comm) → (P₀-Q S R (QM S R R-comm))
+Q-out-fun S R R-comm x = Iso.fun (shift-quotient S R R-comm) x
+
+M→QM : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → poly-quot S R R-comm → M S → QM S R R-comm
+M→QM S R R-comm (abs , (sur , comm)) x = let temp' = comm abs {!!} in let temp = (abs (out-fun x)) in  Q-in-fun S R R-comm (abs {!!})
+
 
 -- Weak bisimularity for delay monad
 ∼perm' : {R : Type₀} {X : Type₀} {a : tree-S R .fst} → (tree-S R .snd a → X) → (tree-S R .snd a → X) → Type₀
@@ -83,10 +105,11 @@ poly-quot {ℓ} S =
 ∼perm' {a = inl r} _ _ = Unit -- always true
 
 ∼perm'-comm :  {R : Type₀} {X Y : Type₀} (f : X → Y) {a : tree-S R .fst} → {x y : tree-S R .snd a → X} → ∼perm' x y → ∼perm' (f ∘ x) (f ∘ y)
-∼perm'-comm f {a = inr tt} p = (p .fst) , ((proj₁ (p .snd)) , λ i → f ∘ proj₂ (p .snd) i)
+∼perm'-comm f {a = inr tt} p = (p .fst) , ((proj₁ (p .snd)) , cong (λ a → f ∘ a) (proj₂ (p .snd)))
+
 ∼perm'-comm f {a = inl r} tt = tt
 
-asdf : ∀ {R} → poly-quot' (tree-S R) ∼perm' ∼perm'-comm
+asdf : ∀ {R} → poly-quot (tree-S R) ∼perm' ∼perm'-comm
 asdf {R = R} =
   (λ {(inl r , b) → inl r , [ b ] ; (inr tt , f) → inr tt , [ f ]}) ,
   (λ {(inl r , b) → ∥map∥ (λ {(v , p) → (inl r , v) , (ΣPathP (refl , p))}) ([]surjective b)
@@ -94,87 +117,4 @@ asdf {R = R} =
   λ {f (inl r , b) → refl
     ;f (inr tt , g) → refl}
 
--- TODO: Take the limit!
 
-delay-conta : ∀ {R} → Container ℓ-zero
-delay-conta {R = R} =
-  Quotient-Container (tree-S R) λ x → ⊥
-
--- Trivial Quotient
-asfdhtr : ∀ {R} → poly-quot (tree-S R)
-asfdhtr {R} = P₀ (tree-S R) , P₁ , {!!}
-
--- -- -- Weak bisimularity for delay monad
--- -- data _∼_ {R : Type₀} : (_ _ : tree R) → Type₀ where
--- --   ∼now : ∀ (s r : R) → s ≡ r → leaf s ∼ leaf r
--- --   ∼later : ∀ f g → (∀ n → f n ∼ g n) → node f ∼ node g
--- --   ∼perm : ∀ f (g : ℕ → ℕ) → isEquiv g → node f ∼ node (f ∘ g)
-
--- F₀' : {R : Type₀} → Type₀ → Type₀
--- F₀' {R = R} X =
---   Σ (tree-S R .fst) λ {(inl r) → ⊥ → X
---                       ;(inr tt) → Σ[ f ∈ (ℕ → X) ] ((g : ℕ → ℕ) → isEquiv g → (Σ[ v ∈ ((ℕ -> X) → X) ] (v f ≡ v (f ∘ g))))}
-
--- F₁' : ∀ {R : Type₀} {X Y : Type₀} (f : X -> Y) -> F₀' {R = R} X -> F₀' {R = R} Y
--- F₁' {R = R} {Y = Y} a ((inl r) , b) = inl r , λ ()
--- F₁' {R = R} {Y = Y} a ((inr tt) , (f , p)) = inr tt , (a ∘ f , λ g e → (λ h → a (p g e .fst f)) , refl)
-
--- -- Only at the level of containers
--- asfdhtr' : ∀ {R} → poly-quot (tree-S R)
--- asfdhtr' {R} =
---   F₀' {R = R} , F₁' ,
---   ((λ {(inl r , b) → inl r , (λ ()) ; (inr tt , f) → inr tt , (f , λ g e → (λ _ → f 0) , refl)})
---   ,((λ {(inl r , b) → ∣ (inl r , b) , ΣPathP (refl , isContr→isProp isContr⊥→A (λ ()) b) ∣
---        ;(inr tt , (f , p)) → ∣ (inr tt , f) , ΣPathP (refl , ΣPathP (refl , {!!})) ∣}) ,
---   {!!}))
-
-
-
--- F₀' : {R : Type₀} → Type₀ → Type₀
--- F₀' {R = R} X = Σ (tree-S R .fst) λ {(inl r) → ⊥ → X ; (inr tt) → Σ[ f ∈ (ℕ → X) ] Σ (ℕ → ℕ) (λ g → isEquiv g × (f ≡ f ∘ g))}
-
--- F₁' : ∀ {R : Type₀} {X Y : Type₀} (f : X -> Y) -> F₀' {R = R} X -> F₀' {R = R} Y
--- F₁' {R = R} {Y = Y} a ((inl r) , b) = inl r , λ ()
--- F₁' {R = R} {Y = Y} a ((inr tt) , (f , g , e , p)) = inr tt , (a ∘ f , (g , (e , λ i → a ∘ (p i))))
-
--- -- Only at the level of containers
--- asfdhtr' : ∀ {R} → poly-quot (tree-S R)
--- asfdhtr' {R} =
---   F₀' {R = R} , F₁' ,
---   ((λ {(inl r , b) → inl r , (λ ()) ; (inr tt , f) → inr tt , (f , idEquiv ℕ .fst , ((idEquiv ℕ .snd) , refl))})
---   ,((λ {(inl r , b) → ∣ (inl r , b) , ΣPathP (refl , isContr→isProp isContr⊥→A (λ ()) b) ∣
---        ;(inr tt , (f , g , e , p)) → ∣ (inr tt , f) , ΣPathP (refl , (ΣPathP (refl , ΣPathP ({!!} , {!!})))) ∣}) ,
---   {!!}))
-
--- b→T : ∀ {X} → b X → T X
--- b→T (leaf x) = leaf x
--- b→T (node f) = node (b→T ∘ f)
-
--- b→T-∼→≡ : ∀ {X} {x y : b X} → x ∼ y → b→T x ≡ b→T y
--- b→T-∼→≡ (∼leaf p) = cong (b→T ∘ leaf) p
--- b→T-∼→≡ {X} (∼node {f} {g} p) = cong {B = λ _ → T X} node (funExt (b→T-∼→≡ ∘ p))
--- b→T-∼→≡ (∼perm f g e) = perm (b→T ∘ f) g e
-
--- recc :
---   ∀ {A B : Set} {R : A → A → Set} →
---   (f : A → B) →
---   (∀ x y → R x y → f x ≡ f y) →
---   isSet B →
---   A / R → B
--- recc {A} {B} {R} f feq B-set ar =
---   Cubical.HITs.SetQuotients.elim {B = λ _ → B} (λ _ → B-set) f feq ar
-
--- b/∼→T : ∀ {X} → b X / _∼_ → T X
--- b/∼→T = recc b→T (λ _ _ → b→T-∼→≡) T-isSet
-
--- sequence' : ∀ {ℓ} -> Type ℓ → Container ℓ -> Chain ℓ
--- X (sequence' X S) n = Wₙ S n
--- π (sequence' X S) {n} = πₙ S {n}
-
--- -- Only at the level of containers
--- asfdhtr' : ∀ {R} → poly-quot (tree-S R)
--- asfdhtr' {R} = F₀' {R = R} , F₁' , ((λ {(a , b) → (λ x → let temp = πₙ (tree-S R) (x .fst , {!!}) in {!!}) , {!!}}) , {!!}) -- π {!!} {!!}
-
--- ∀ f (g : ℕ → ℕ) → isEquiv g → node f ∼ node (f ∘ g)
-
--- λ { (a , g) ->  a , f ∘ g }
