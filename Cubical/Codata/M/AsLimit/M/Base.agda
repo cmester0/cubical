@@ -82,75 +82,6 @@ leftInv (lemma11-Iso {ℓ = ℓ} {S = S} X l) (x , y) i =
     χ-prop x₀ =  λ a b → fun (iso→fun-Injection-Iso-x (Z-is-Section x₀)) (χ-prop' x₀ (fun (Z-is-Section x₀) a) (fun (Z-is-Section x₀) b))
     -- subst isProp (sym (isoToPath (Z-is-Section x₀))) (χ-prop' x₀)
 
------------------------------------------------------
--- Shifting the limit of a chain is an equivalence --
------------------------------------------------------
-
--- mutual
---   private
---     shift-iso'-fun-x : ∀ {ℓ} (S : Container ℓ) → (k : P₀ S (M S)) → (n : ℕ) → Wₙ S n
---     shift-iso'-fun-x S =
---       λ { _ 0 → lift tt
---         ; k (suc n) → k .fst , (λ x₁ → shift-iso'-fun-x S (inv (shift-iso' S) (k .snd x₁)) n) }
-    
---   shift-iso' : ∀ {ℓ} (S : Container ℓ) -> Iso (P₀ S (M S)) (M S)
---   fun (shift-iso' {ℓ} S@(A , B)) (x , y) =
---     {!!} ,
---     {!!}
---     where
---       Wₙ' : (ℕ → A) → ℕ -> Type ℓ
---       Wₙ' a 0 = Lift Unit
---       Wₙ' a (suc n) = (B (a n) → Wₙ' a n) -- Σ[ a ∈ A ] (B a -> X)
-
---       -- asfd : (n : ℕ) → Wₙ' (λ n → x) n → Wₙ
-
---       temp : (n : ℕ) → Wₙ' (λ n → x) n
---       temp 0 = lift tt
---       temp 1 = λ k → lift tt
---       temp (suc (suc n)) = λ k → temp (suc n) (y k .fst (suc n) .fst)
-
---       temp' : (n : ℕ) → Wₙ S n
---       temp' 1 = x , λ k → y k .fst 0
---   inv (shift-iso' {ℓ} S@(A , B)) x = (x .fst 1 .fst) , λ k → (λ {0 → lift tt ; (suc 0) → {!!}}) , {!!} --  , λ k → temp , ? -- temp'
---     where
---       temp : (n : ℕ) → B (x .fst (suc n) .fst) → Wₙ S (suc n)
---       temp n k  = (x .fst (suc (suc n)) .fst) , (λ _ → x .fst (suc n) .snd k)
-
---       -- temp' : (n : ℕ) → B (x .fst (suc 0) .fst) → Wₙ (PX,Pπ S) n
---       -- temp' 0 k = lift tt
---       -- temp' (suc 0) k = (x .fst (suc (suc 0)) .fst) , (λ x₁ → x .fst (suc 0) .snd k)
---       -- temp' (suc 1) k = {!!}
-
---       -- x .fst (suc n) .fst , λ k → x .fst {!!} .snd {!!}
---       -- temp' : (n : ℕ) → πₙ S (temp (suc n)) ≡ temp n
---       -- temp' 0 = refl
---       -- temp' (suc n) i = (x .snd (suc (suc n)) i .fst) , λ _ → temp' n i
---   rightInv (shift-iso' S@(A , B)) b = {!!}
---     -- fun (shift-iso' S) (inv (shift-iso' S) b)
---     --   ≡⟨ refl ⟩
---     -- fun (shift-iso' S) (b .fst 1 .fst , λ k → b)
---     --   ≡⟨ ΣPathP ((funExt (λ {0 → refl ; (suc n) → refl})) , λ {i 0 → refl ; i (suc n) → {!!}}) ⟩
---     -- (λ {0 → lift tt ; (suc n) → b .fst 1 .fst , λ k → b .fst n}) ,
---     -- (λ {0 → refl ; (suc n) i → {!!}}) -- b .fst 1 .fst , λ k → b .snd n i
---     --   ≡⟨ ΣPathP (funExt (λ {0 → refl ; (suc n) → ΣPathP ((b .fst 1 .fst ≡⟨ temp n ⟩ b .fst (suc n) .fst ∎) , {!!})}) , {!!}) ⟩
---     -- (λ {0 → lift tt ; (suc n) → b .fst (suc n) .fst , λ k → b .fst (suc n) .snd k}) ,
---     -- (λ {0 → refl ; (suc n) i → b .snd (suc n) i .fst , λ k → b .snd (suc n) i .snd k})
---     --   ≡⟨ ΣPathP ((funExt (λ {0 → refl ; (suc n) → refl})) , λ {i 0 → refl ; i (suc n) → b .snd (suc n)}) ⟩
---     -- b ∎
---     -- where
---     --   ga : Iso (Σ[ a ∈ ((n : ℕ) → A) ] ((n : ℕ) → a (suc n) ≡ a n)) A 
---     --   ga = lemma11-Iso {S = S} (λ _ → A) (λ _ x → x)
-
---     --   a : ℕ → A
---     --   a n = b .fst (suc n) .fst
-
---     --   p : (n : ℕ) → a (suc n) ≡ a n
---     --   p n i = b .snd (suc n) i .fst
-
---     --   temp : (n : ℕ) → b .fst (suc 0) .fst ≡ b .fst (suc n) .fst -- should be trivial..
---     --   temp 0 = refl
---     --   temp (suc n) = temp n ∙ {!!} -- b .fst (suc n) .fst ≡ b .fst (suc (suc n)) .fst
-
 -- Shift is equivalence (12) and (13) in the proof of Theorem 7
 -- https://arxiv.org/pdf/1504.02949.pdf
 -- "Non-wellfounded trees in Homotopy Type Theory"
@@ -164,12 +95,12 @@ shift-iso S@(A , B) =
                                (λ (u , q) z → (λ n → u n z) , λ n i → q n i z)
                                (λ _ → refl)
                                (λ _ → refl)) ⟩
-  (Σ[ a ∈ A ] (Σ[ u ∈ ((n : ℕ) → B a → X (sequence S) n) ] ((n : ℕ) → π (sequence S) ∘ (u (suc n)) ≡ u n)))
+  (Σ[ a ∈ A ] (Σ[ u ∈ ((n : ℕ) → B a → Wₙ S n) ] ((n : ℕ) → πₙ S ∘ (u (suc n)) ≡ u n)))
     Iso⟨ invIso α-iso-step-5-Iso ⟩
   (Σ[ a ∈ (Σ[ a ∈ ((n : ℕ) → A) ] ((n : ℕ) → a (suc n) ≡ a n)) ]
-        Σ[ u ∈ ((n : ℕ) → B (a .fst n) → X (sequence S) n) ]
-           ((n : ℕ) → PathP (λ x → B (a .snd n x) → X (sequence S) n)
-                               (π (sequence S) ∘ u (suc n))
+        Σ[ u ∈ ((n : ℕ) → B (a .fst n) → Wₙ S n) ]
+           ((n : ℕ) → PathP (λ x → B (a .snd n x) → Wₙ S n)
+                               (πₙ S ∘ u (suc n))
                                (u n)))
       Iso⟨ α-iso-step-1-4-Iso-lem-12 ⟩
   M S ∎Iso
@@ -191,7 +122,7 @@ shift-iso S@(A , B) =
          PathP (λ x → B (p n x) → Wₙ S n) (πₙ S ∘ u (suc n)) (u n)
            Iso⟨ pathToIso (PathP≡Path (λ x → B (p n x) → Wₙ S n) (πₙ S ∘ u (suc n)) (u n)) ⟩
          subst (λ k → B k → Wₙ S n) (p n) (πₙ S ∘ u (suc n)) ≡ (u n)
-           Iso⟨ (invIso (temp sfad)) ⟩
+           Iso⟨ (invIso (temp (pathToIso (cong (λ k → B k → Wₙ S n) (α-iso-step-5-Iso-helper0 a,p n))))) ⟩
          (subst (λ k → B k → Wₙ S n) (α-iso-step-5-Iso-helper0 a,p n) (subst (λ k → B k → Wₙ S n) (p n) (πₙ S ∘ u (suc n)))
                 ≡
          subst (λ k → B k → Wₙ S n) (α-iso-step-5-Iso-helper0 a,p n) (u n))
@@ -208,33 +139,33 @@ shift-iso S@(A , B) =
          where
            abstract
              temp = iso→fun-Injection-Iso-x
-
-           private
-             sfad : Iso (B (a n) → Wₙ S n) (B (a 0) → Wₙ S n)
-             sfad = (pathToIso (cong (λ k → B k → Wₙ S n) (α-iso-step-5-Iso-helper0 a,p n)))
            
   α-iso-step-5-Iso :
          Iso
            (Σ[ a ∈ (Σ[ a ∈ ((n : ℕ) → A) ] ((n : ℕ) → a (suc n) ≡ a n)) ]
-             Σ[ u ∈ ((n : ℕ) → B (a .fst n) → X (sequence S) n) ]
-               ((n : ℕ) → PathP (λ x → B (a .snd n x) → X (sequence S) n)
-                                   (π (sequence S) ∘ u (suc n))
+             Σ[ u ∈ ((n : ℕ) → B (a .fst n) → Wₙ S n) ]
+               ((n : ℕ) → PathP (λ x → B (a .snd n x) → Wₙ S n)
+                                   (πₙ S ∘ u (suc n))
                                    (u n)))
-             (Σ[ a ∈ A ] (Σ[ u ∈ ((n : ℕ) → B a → X (sequence S) n) ] ((n : ℕ) → π (sequence S) ∘ (u (suc n)) ≡ u n)))
+             (Σ[ a ∈ A ] (Σ[ u ∈ ((n : ℕ) → B a → Wₙ S n) ] ((n : ℕ) → πₙ S ∘ (u (suc n)) ≡ u n)))
   α-iso-step-5-Iso =
     Σ-ap-iso (lemma11-Iso {S = S} (λ _ → A) (λ _ x → x)) (λ a,p →
     Σ-ap-iso (pathToIso (cong (λ k → (n : ℕ) → k n) (funExt λ n → cong (λ k → B k → Wₙ S n) (α-iso-step-5-Iso-helper0 a,p n)))) λ u →
-              pathToIso (cong (λ k → (n : ℕ) → k n) (funExt λ n → isoToPath (α-iso-step-5-Iso-helper1-Iso a,p u n))))
+              pathToIso (cong (λ k → (n : ℕ) → k n) (funExt λ n → isoToPath (α-iso-step-5-Iso-helper1-Iso a,p u n))))            
 
   α-iso-step-1-4-Iso-lem-12 :
         Iso (Σ[ a ∈ (Σ[ a ∈ ((n : ℕ) → A)] ((n : ℕ) → a (suc n) ≡ a n)) ]
-                  (Σ[ u ∈ ((n : ℕ) → B (a .fst n) → X (sequence S) n) ]
-                      ((n : ℕ) → PathP (λ x → B (a .snd n x) → X (sequence S) n)
-                                          (π (sequence S) ∘ u (suc n))
+                  (Σ[ u ∈ ((n : ℕ) → B (a .fst n) → Wₙ S n) ]
+                      ((n : ℕ) → PathP (λ x → B (a .snd n x) → Wₙ S n)
+                                          (πₙ S {n = n} ∘ u (suc n))
                                           (u n))))
-            (limit-of-chain (sequence S))
-  fun α-iso-step-1-4-Iso-lem-12 (a , b) = (λ { 0 → lift tt ; (suc n) → (a .fst n) , (b .fst n)}) , λ { 0 → refl {x = lift tt} ; (suc m) i → a .snd m i , b .snd m i }
-  inv α-iso-step-1-4-Iso-lem-12 x = ((λ n → (x .fst) (suc n) .fst) , λ n i → (x .snd) (suc n) i .fst) , (λ n → (x .fst) (suc n) .snd) , λ n i → (x .snd) (suc n) i .snd
+            (M S)
+  fun α-iso-step-1-4-Iso-lem-12 (a , b) =
+    (λ { 0 → lift tt ; (suc n) → (a .fst n) , (b .fst n)}) ,
+    (λ { 0 → refl {x = lift tt} ; (suc m) i → a .snd m i , b .snd m i })
+  inv α-iso-step-1-4-Iso-lem-12 x =
+    ((λ n → (x .fst) (suc n) .fst) , λ n i → (x .snd) (suc n) i .fst) ,
+     (λ n → (x .fst) (suc n) .snd) , λ n i → (x .snd) (suc n) i .snd
   fst (rightInv α-iso-step-1-4-Iso-lem-12 (b , c) i) 0 = lift tt
   fst (rightInv α-iso-step-1-4-Iso-lem-12 (b , c) i) (suc n) = refl i
   snd (rightInv α-iso-step-1-4-Iso-lem-12 (b , c) i) 0 = refl
@@ -255,15 +186,15 @@ out-fun {S = S@(A , B)} = inv (shift-iso S)
 -- Property of functions into M-types
 
 lift-to-M : ∀ {ℓ ℓ'} {S : Container ℓ} {A : Type ℓ'}
-  → (x : (n : ℕ) -> A → X (sequence S) n)
-  → ((n : ℕ) → (a : A) →  π (sequence S) (x (suc n) a) ≡ x n a)
+  → (x : (n : ℕ) -> A → Wₙ S n)
+  → ((n : ℕ) → (a : A) →  πₙ S (x (suc n) a) ≡ x n a)
   ---------------
   → (A → M S)
 lift-to-M x p a = (λ n → x n a) , λ n i → p n a i
 
 lift-direct-M : ∀ {ℓ} {S : Container ℓ}
-  → (x : (n : ℕ) → X (sequence S) n)
-  → ((n : ℕ) →  π (sequence S) (x (suc n)) ≡ x n)
+  → (x : (n : ℕ) → Wₙ S n)
+  → ((n : ℕ) →  πₙ S (x (suc n)) ≡ x n)
   ---------------
   → M S
 lift-direct-M x p = x , p

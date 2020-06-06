@@ -20,7 +20,7 @@ open import Cubical.Codata.M.AsLimit.Container
 open import Cubical.Codata.M.AsLimit.itree
 open import Cubical.Codata.M.AsLimit.M
 
-open import Cubical.HITs.PropositionalTruncation renaming (map to ∥map∥)
+open import Cubical.HITs.PropositionalTruncation renaming (rec to ∥rec∥ ; map to ∥map∥)
 open import Cubical.HITs.SetQuotients renaming (elim to elim/ ; rec to rec/)
 
 open import Cubical.Foundations.Prelude
@@ -522,7 +522,7 @@ const-seq s =
     ≡⟨ sldfkja (Maybe→⊥ s) ⟩
   Maybe→⊥ s ∎
 
-rec⊥ :
+elimProp⊥ :
   ∀ {A : Set} (P : < A >⊥ → Set)
   → (∀ a → isProp (P a))
   → P never
@@ -530,7 +530,7 @@ rec⊥ :
   → ((s : Σ[ s ∈ (ℕ → < A >⊥) ] ((n : ℕ) → s n ⊑ s (suc n)))
         → ((n : ℕ) → P (fst s n)) → P (⊔ s))
   → (x : < A >⊥) → P x
-rec⊥ {A = A} P Pprop pn pη p⊔ x = temp x
+elimProp⊥ {A = A} P Pprop pn pη p⊔ x = temp x
   where
     temp : (x : < A >⊥) → P x
     temp never = pn
@@ -557,7 +557,7 @@ private
 
 Seq→⊥-isSurjection : ∀ {A : Set} → (A-set : isSet A) → Axiom-of-countable-choice ℓ-zero → isSurjection (Seq→⊥ {A})
 Seq→⊥-isSurjection {A} A-set cc =
-  rec⊥
+  elimProp⊥
     (λ y → ∥ (Σ[ x ∈ Seq A ] (Seq→⊥ x ≡ y)) ∥)
     (λ _ → propTruncIsProp)
     ∣ ((λ _ → inr tt) , (λ _ → inl refl)) , const-seq (inr tt) ∣

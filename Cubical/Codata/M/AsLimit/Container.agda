@@ -76,9 +76,9 @@ X (sequence S) n = Wₙ S n
 π (sequence S) {n} = πₙ S {n}
 
 PX,Pπ : ∀ {ℓ} (S : Container ℓ) -> Chain ℓ
-PX,Pπ {ℓ} S =
-  (λ n → P₀ S (X (sequence S) n)) ,,
-  (λ {n : ℕ} x → P₁ (λ z → z) (π (sequence S) {n = suc n} x ))
+PX,Pπ {ℓ} S = shift-chain (sequence S)
+  -- (λ n → P₀ S (X (sequence S) n)) ,,
+  -- (λ {n : ℕ} x → P₁ (λ z → z) (π (sequence S) {n = suc n} x ))
 
 -----------------------------------
 -- M type is limit of a sequence --
