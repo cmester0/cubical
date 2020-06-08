@@ -141,7 +141,7 @@ shift-iso S@(A , B) =
           ≡
         subst (λ k → B k → Wₙ S n) (α-iso-step-5-Iso-helper0 a p n) (u n) ∎Iso
         where
-          abstract
+          -- abstract
             temp = iso→fun-Injection-Iso-x
 
       α-iso-step-5-Iso :
