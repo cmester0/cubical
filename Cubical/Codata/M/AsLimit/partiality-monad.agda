@@ -25,6 +25,7 @@ open import Cubical.HITs.SetQuotients renaming (elim to elim/ ; rec to rec/)
 
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.Path
+open import Cubical.Foundations.Transport
 open import Cubical.Foundations.Isomorphism
 open import Cubical.Foundations.Function
 open import Cubical.Foundations.Equiv
@@ -110,12 +111,15 @@ module _ where
   shift-unshift (g , a) =
     ΣPathP ((funExt λ {0 → refl ; (suc n) → refl }) , λ {i 0 → a 0 ; i (suc n) → a (suc n)})
 
+  now-seq : {A : Set} -> A -> Seq A
+  now-seq a = (λ _ → inl a) , (λ _ → inl refl)
+
 ----------------------------------
 -- Sequence equivalent to Delay --
 ----------------------------------
 
   Delay→Seq : ∀ {A : Set} → Delay A → Seq A
-  Delay→Seq (now a) = (λ _ → inl a) , (λ _ → inl refl)
+  Delay→Seq (now a) = now-seq a
   Delay→Seq (later t) = shift' (Delay→Seq t)
   
   private
@@ -143,7 +147,13 @@ module _ where
   fadsasfgd A-set b n (inr (x , q)) (inl p) = rec (q (sym p ∙ x))
   fadsasfgd A-set b n (inr (x , p)) (inr (y , q)) =
     cong inr λ i → A-set (fst b n) (inr tt) x y i , λ v → isProp⊥ (p v) (q v) i
-  
+
+  famm : ∀ {A} → isSet (A ⊎ Unit) → (b : Seq A) (r : A) → inl r ≡ fst b 0 → now-seq r ≡ b
+  famm A-set b r q =
+    ΣPathP (funExt (asfd b r q) ,
+      transport (sym (PathP≡Path (λ i → ismon (funExt (asfd b r q) i)) (λ _ → inl refl) (snd b)))
+        (funExt λ (n : ℕ) → fadsasfgd A-set b n (transport (λ i → ismon (funExt (asfd b r q) i)) (λ _ → inl refl) n) (snd b n)))
+
   postulate
     elp : ∀ {A} → isSet (A ⊎ Unit) -> (b : Seq A) -> Delay→Seq (Seq→Delay' b) ≡ b
 
@@ -165,10 +175,8 @@ module _ where
       ≡⟨ (λ i → Delay→Seq (insert-fun b (q i))) ⟩
     Delay→Seq (now r)
       ≡⟨ refl ⟩
-    ((λ _ → inl r) , (λ _ → inl refl))
-      ≡⟨ ΣPathP (funExt (asfd b r (sym q)) ,
-                transport (sym (PathP≡Path (λ i → ismon (funExt (asfd b r (sym q)) i)) (λ _ → inl refl) (snd b)))
-                          (funExt λ (n : ℕ) → fadsasfgd A-set b n (transport (λ i → ismon (funExt (asfd b r (sym q)) i)) (λ _ → inl refl) n) (snd b n))) ⟩ 
+    (now-seq r)
+      ≡⟨ famm A-set b r (sym q) ⟩ 
     b ∎
   ... | (inr tt , q , _) =
     Delay→Seq ((insert-fun b) (fst b 0))
@@ -216,32 +224,36 @@ module _ where
   asfdasdf' : forall {A : Set} (a : A) (b : Seq A) -> (shift' b) ↓seq a -> b ↓seq a
   asfdasdf' a b (0 , p) = 0 , sym (asfd (shift' b) a (sym p) 1)
   asfdasdf' a b ((suc n) , p) = n , p
-  
+
+  ∼seq-refl : forall {A : Set} (a : Seq A) -> a ∼seq a
+  ∼seq-refl = λ a → (λ a₁ x → x) , (λ a₁ x → x)
+
+  shift-sim : forall {A : Set} (a b : Seq A) -> a ∼seq b -> (shift' a) ∼seq b
+  shift-sim a b (p , q) =
+    (λ v x → p v (∥map∥ (asfdasdf' v a) x)) ,
+    (λ v x → ∥map∥ (asfdasdf v a) (q v x))
+
+  shift-sym : forall {A : Set} (a b : Seq A) -> a ∼seq b -> b ∼seq  a
+  shift-sym a b (p , q) = q , p
+
   ∼Delay→∼Seq : ∀ {A : Set} → {x y : Delay A} → x ∼delay y → (Delay→Seq x) ∼seq (Delay→Seq y)
   ∼Delay→∼Seq (∼now a b p) =
-    let path0 = (\i -> ((λ _ → inl a) , (λ _ → inl (λ _ → inl a))) ⊑seq ((λ _ → inl (p i)) , (λ _ → inl (λ _ → inl (p i))))) in
-    let path1 = (\i -> ((λ _ → inl (p i)) , (λ _ → inl (λ _ → inl (p i)))) ⊑seq ((λ _ → inl a) , (λ _ → inl (λ _ → inl a)))) in
-    transport (path0) (⊑seq-refl (Delay→Seq (now a))) ,
-    transport (path1) (⊑seq-refl (Delay→Seq (now a)))
-    -- (⊑seq-refl (Delay→Seq (now a))) ,
-    -- (⊑seq-refl (Delay→Seq (now b)))
+    subst (λ k → now-seq a ∼seq now-seq k) p (∼seq-refl (now-seq a))
   ∼Delay→∼Seq (∼later-l t u p) =
-    (λ a x → proj₁ (∼Delay→∼Seq p) a (∥map∥ (λ x' → asfdasdf' a (Delay→Seq t) x') x)) ,
-    (λ a x → ∥map∥ (asfdasdf a (Delay→Seq t)) (proj₂ (∼Delay→∼Seq p) a x))
+    shift-sim (Delay→Seq t) (Delay→Seq u) (∼Delay→∼Seq p)
   ∼Delay→∼Seq (∼later-r t u p) =
-    (λ a x → ∥map∥ (asfdasdf a (Delay→Seq u)) (proj₁ (∼Delay→∼Seq p) a x)) ,
-    (λ a x → proj₂ (∼Delay→∼Seq p) a (∥map∥ (λ x' → asfdasdf' a (Delay→Seq u) x') x))
+    shift-sym (Delay→Seq (later u)) (Delay→Seq t) (shift-sim (Delay→Seq u) (Delay→Seq t) (shift-sym (Delay→Seq t) (Delay→Seq u) (∼Delay→∼Seq p)))
   ∼Delay→∼Seq (∼later t u p) =
-    (λ a x → ∥map∥ (asfdasdf a (Delay→Seq u)) (proj₁ (∼Delay→∼Seq p) a (∥map∥ (asfdasdf' a (Delay→Seq t)) x))) ,
-    (λ a x → ∥map∥ (asfdasdf a (Delay→Seq t)) (proj₂ (∼Delay→∼Seq p) a (∥map∥ (asfdasdf' a (Delay→Seq u)) x)))
-    
+    shift-sym (Delay→Seq (later u)) (Delay→Seq (later t)) (shift-sim (Delay→Seq u) (Delay→Seq (later t)) (shift-sym (Delay→Seq (later t)) (Delay→Seq u) (shift-sim (Delay→Seq t) (Delay→Seq u) (∼Delay→∼Seq p))))    
 
-  kappa : {A : Set} -> A ⊎ Unit -> A ⊎ Unit -> A ⊎ Unit × A ⊎ Unit
-  kappa x y = x , y
+  kappa : {A : Set} -> (x : A ⊎ Unit) -> (y : A ⊎ Unit) -> (Σ[ x' ∈ (A ⊎ Unit) ] x' ≡ x) × (Σ[ y' ∈ (A ⊎ Unit) ] y' ≡ y)
+  kappa x y = (x , refl) , (y , refl)
 
 
   postulate
-    ∼Seq→∼Delay' : ∀ {A : Set} → {x y : Seq A} → x ∼seq y → Seq→Delay' x ∼delay Seq→Delay' y 
+    ∼Seq→∼Delay' : ∀ {A : Set} → {x y : Seq A} → x ∼seq y → Seq→Delay' x ∼delay Seq→Delay' y
+    ∼Seq→∼Delay'' : ∀ {A : Set} → {x y : Seq A} → x ∼seq y → Seq→Delay x ∼delay Seq→Delay' y 
+    ∼Seq→∼Delay''' : ∀ {A : Set} → {x y : Seq A} → x ∼seq y → Seq→Delay' x ∼delay Seq→Delay y 
 
   asfdasdf'' : forall {A : Set} (a : A) (b : Seq A) -> b ↓seq a -> (unshift b) ↓seq a
   asfdasdf'' a b (0 , p) = 0 , sym (asfd b a (sym p) 1)
@@ -250,16 +262,86 @@ module _ where
   asfdasdf''' : forall {A : Set} (a : A) (b : Seq A) -> (unshift b) ↓seq a -> b ↓seq a 
   asfdasdf''' a b (n , p) = suc n , p
 
-  ∼Seq→∼Delay : ∀ {A : Set} → {x y : Seq A} → x ∼seq y → Seq→Delay x ∼delay Seq→Delay y 
-  ∼Seq→∼Delay {x = x} {y} (a , b) =
-    case kappa (x .fst 0) (y .fst 0) return (λ { (a , b) → insert-fun x a ∼delay insert-fun y b }) of
-      λ {(inl r , inl s) → let temp = a r in let temp' = b r in ∼now r s {!!}
-        ;(inr tt , inr tt) → ∼later (Seq→Delay' (unshift x)) (Seq→Delay' (unshift y)) (∼Seq→∼Delay' (
+  ∼seq-now-eq : ∀ {A : Set} {a b : A} → now-seq a ∼seq now-seq b → a ≡ b
+  ∼seq-now-eq {a = a} {b} (p , q) = let temp = p a in {!!}
+
+  kva : ∀ {A : Set} y {r a : A} → y ↓seq r → y ↓seq a → r ≡ a
+  kva y {r = r} {a} (0 , p) (m , q) = transport (isEmbedding→Injection-x inl isEmbedding-inl r a) (asfd y r (sym p) m ∙ q)
+  kva y {r = r} {a} ((suc n) , p) (m , q) = {!!}
+
+  kva' : {A : Set} → isSet (A) → ∀ y {r a : A} → ∥ y ↓seq r ∥ → ∥ y ↓seq a ∥ → r ≡ a
+  kva' A-set y {r} {a} p q = ∥rec∥ (A-set r a) (λ p' → ∥rec∥ (A-set r a) (λ q' → kva y p' q') q) p
+
+  asdf : ∀ {A : Set} {y} {r : A} → now-seq r ⊑seq y → y ∼seq now-seq r
+  asdf {y = y} {r} p = (λ a x → let temp = p r ∣ 0 , refl ∣ in {!!}) , p
+
+  A-Unit-set : ∀ {A : Set} → isSet A → isSet (A ⊎ Unit)
+  A-Unit-set A-set (inl r) (inl a) p q =
+    let temp = (A-set r a (transport (isEmbedding→Injection-x inl isEmbedding-inl r a) p) (transport (isEmbedding→Injection-x inl isEmbedding-inl r a) q)) in
+    let temp' = transport (isEmbedding→Injection-x inl isEmbedding-inl r a) p ≡
+                transport (isEmbedding→Injection-x inl isEmbedding-inl r a) q
+                  ≡⟨ isEmbedding→Injection-x (transport (isEmbedding→Injection-x inl isEmbedding-inl r a)) (iso→isEmbedding (pathToIso (isEmbedding→Injection-x inl isEmbedding-inl r a))) p q ⟩
+                p ≡ q ∎
+    in transport temp' temp
+  A-Unit-set A-set (inl r) (inr tt) p q = rec (inl≢inr p)
+  A-Unit-set A-set (inr tt) (inl b) p q = rec (inl≢inr (sym p))
+  A-Unit-set A-set (inr tt) (inr tt) p q =
+    let temp = (isProp→isSet (isContr→isProp (tt , (λ y i → tt)))) in
+    let temp' = (temp tt tt (transport (isEmbedding→Injection-x inr isEmbedding-inr tt tt) p) (transport (isEmbedding→Injection-x inr isEmbedding-inr tt tt) q)) in
+    let temp'' = transport (isEmbedding→Injection-x inr isEmbedding-inr tt tt) p ≡
+                 transport (isEmbedding→Injection-x inr isEmbedding-inr tt tt) q
+                   ≡⟨ isEmbedding→Injection-x (transport (isEmbedding→Injection-x inr isEmbedding-inr tt tt)) (iso→isEmbedding (pathToIso (isEmbedding→Injection-x inr isEmbedding-inr tt tt))) p q ⟩
+                 p ≡ q ∎
+    in
+    transport temp'' temp'
+  
+  ∼Seq→∼Delay : ∀ {A : Set} → (isSet A) → {x y : Seq A} → x ∼seq y → Seq→Delay x ∼delay Seq→Delay y 
+  ∼Seq→∼Delay A-set {x = x} {y} (a , b) =
+    case kappa (x .fst 0) (y .fst 0) return (λ { ((a , _) , (b , _)) → insert-fun x a ∼delay insert-fun y b }) of
+      λ {((inl r , p) , (inl s , q)) → ∼now r s (kva' A-set x ∣ 0 , sym p ∣ (b s ∣ 0 , sym q ∣))
+        ;((inl r , p) , (inr tt , q)) →
+          let temp = 
+                   (∼later-r (Seq→Delay x) (Seq→Delay' (unshift y)) (∼Seq→∼Delay''
+                     ((λ a₁ x₁ → ∥map∥ (λ x₂ → asfdasdf'' a₁ y x₂) (a a₁ x₁)) ,
+                     (λ a₁ x₁ → (b a₁ (∥map∥ (asfdasdf''' a₁ y) x₁))))))
+          in
+            transport (λ i → Seq→Delay (sym (famm (A-Unit-set A-set) x r p) i) ∼delay later (Seq→Delay' (unshift y))) temp
+        ;((inr tt , p) , (inl s , q)) →
+          let temp = 
+                   (∼later-l (Seq→Delay' (unshift x)) (Seq→Delay y) (∼Seq→∼Delay'''
+                     ((λ a₁ x₁ → a a₁ (∥map∥ (asfdasdf''' a₁ x) x₁)) ,
+                     (λ a₁ x₁ → ∥map∥ (λ x₂ → asfdasdf'' a₁ x x₂) (b a₁ x₁)))))
+          in
+            transport (λ i → later (Seq→Delay' (unshift x)) ∼delay (Seq→Delay (sym (famm (A-Unit-set A-set) y s q) i))) temp
+
+        ;((inr tt , p) , (inr tt , q)) → ∼later (Seq→Delay' (unshift x)) (Seq→Delay' (unshift y)) (∼Seq→∼Delay' (
               (λ a₁ x₁ → ∥map∥ (asfdasdf'' a₁ y) (a a₁ (∥map∥ (asfdasdf''' a₁ x) x₁))) ,
               (λ a₁ x₁ → ∥map∥ (asfdasdf'' a₁ x) (b a₁ (∥map∥ (asfdasdf''' a₁ y) x₁)))))}
-  
-  -- delay/∼≡Seq/∼ : forall {A : Set} -> Delay A / _∼delay_ ≡ Seq A / _∼seq_
-  -- delay/∼≡Seq/∼ = {!!}
+
+  akka : ∀ {A : Set} → (A-set : isSet A) → {x y : Seq A} (r : x ∼seq y) → PathP (λ x₁ → Seq-Delay (A-Unit-set A-set) x x₁ ∼seq Seq-Delay (A-Unit-set A-set) y x₁) (∼Delay→∼Seq (∼Seq→∼Delay A-set r)) r
+  akka A-set r = {!!}
+
+  akka' : ∀ {A : Set} → (A-set : isSet A) → {x y : Delay A} (r : x ∼delay y) → PathP (λ x₁ → Delay-Seq x x₁ ∼delay Delay-Seq y x₁) (∼Seq→∼Delay A-set (∼Delay→∼Seq r)) r
+  akka' A-set (∼now a b p) i = ∼now a b (A-set a b (kva' A-set (now-seq a) ∣ 0 , sym refl ∣ (proj₂ (∼Delay→∼Seq (∼now a b p)) b ∣ 0 , sym refl ∣)) p i)
+  akka' A-set (∼later-l x y p) = {!!}
+
+
+  delay/∼≡Seq/∼ : forall {A : Set} → (isSet A) -> Iso (Delay A / _∼delay_) (Seq A / _∼seq_)
+  delay/∼≡Seq/∼ A-set =
+    iso fun inv right left
+    where
+      fun = (rec/ ([_] ∘ Delay→Seq) (λ x y r → eq/ (Delay→Seq x) (Delay→Seq y) (∼Delay→∼Seq r)) squash/)
+      inv = (rec/ ([_] ∘ Seq→Delay) (λ x y r → eq/ (Seq→Delay x) (Seq→Delay y) (∼Seq→∼Delay A-set r)) squash/)
+
+      right : ∀ b → fun (inv b) ≡ b
+      right [ b ] = [ (Delay→Seq (Seq→Delay b)) ] ≡⟨ cong [_] (Seq-Delay (A-Unit-set A-set) b) ⟩ [ b ] ∎
+      right (eq/ a b r i) = (λ j → eq/ (Seq-Delay (A-Unit-set A-set) a j) (Seq-Delay (A-Unit-set A-set) b j) (akka A-set r j) i) ∙ refl
+      right (squash/ a b p q i j) k = (squash/ (right a k) (right b k) (λ h → right (p h) k) (λ h → right (q h) k) i j)
+
+      left : ∀ b → inv (fun b) ≡ b
+      left [ b ] = [ (Seq→Delay (Delay→Seq b)) ] ≡⟨ cong [_] (Delay-Seq b) ⟩ [ b ] ∎
+      left (eq/ a b r i) = (λ j → eq/ (Delay-Seq a j) (Delay-Seq b j) (akka' A-set r j) i) ∙ refl
+      left (squash/ a b p q i j) k = (squash/ (left a k) (left b k) (λ h → left (p h) k) (λ h → left (q h) k) i j)
 
 -- ------------------------
 -- -- Helper definitions --

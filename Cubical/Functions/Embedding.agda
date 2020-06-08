@@ -143,6 +143,14 @@ iso→isEmbedding : ∀ {ℓ} {A B : Type ℓ}
   → isEmbedding (Iso.fun isom)
 iso→isEmbedding {A = A} {B} isom = (isEquiv→isEmbedding (equivIsEquiv (isoToEquiv isom)))
 
+isEmbedding→Injection-x :
+  ∀ {ℓ} {A B : Type ℓ}
+  → (a : A -> B)
+  → (e : isEmbedding a) →
+  ----------------------
+  ∀ x y → (a x ≡ a y) ≡ (x ≡ y)
+isEmbedding→Injection-x a e x y = sym (ua (cong a , e x y))
+
 isEmbedding→Injection :
   ∀ {ℓ} {A B C : Type ℓ}
   → (a : A -> B)
