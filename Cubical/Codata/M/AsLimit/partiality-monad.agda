@@ -12,7 +12,7 @@ module Cubical.Codata.M.AsLimit.partiality-monad where
 open import Cubical.Data.Nat
 open import Cubical.Data.Sum
 open import Cubical.Data.Prod
-open import Cubical.Data.Empty
+open import Cubical.Data.Empty renaming (rec to empty-rec)
 open import Cubical.Data.Bool
 open import Cubical.Data.Sigma hiding (_×_)
 
@@ -139,12 +139,12 @@ module _ where
 
   asfd : ∀ {A} (b : Seq A) (r : A) → inl r ≡ fst b 0 → (n : ℕ) → inl r ≡ fst b n
   asfd b r p 0 = p 
-  asfd b r p (suc n) = asfd b r p n ∙ sym (case snd b n of (λ { (inl q) → sym q ; (inr (q , _)) → rec (inl≢inr (asfd b r p n ∙ q)) }))
+  asfd b r p (suc n) = asfd b r p n ∙ sym (case snd b n of (λ { (inl q) → sym q ; (inr (q , _)) → empty-rec (inl≢inr (asfd b r p n ∙ q)) }))
 
   fadsasfgd : ∀ {A} → isSet (A ⊎ Unit) → (b : Seq A) (n : ℕ) → isProp (LE (fst b n) (fst b (suc n)))
   fadsasfgd A-set b n (inl p) (inl q) = cong inl (A-set (fst b n) (fst b (suc n)) p q)
-  fadsasfgd A-set b n (inl p) (inr (x , q)) = rec (q (sym p ∙ x))
-  fadsasfgd A-set b n (inr (x , q)) (inl p) = rec (q (sym p ∙ x))
+  fadsasfgd A-set b n (inl p) (inr (x , q)) = empty-rec (q (sym p ∙ x))
+  fadsasfgd A-set b n (inr (x , q)) (inl p) = empty-rec (q (sym p ∙ x))
   fadsasfgd A-set b n (inr (x , p)) (inr (y , q)) =
     cong inr λ i → A-set (fst b n) (inr tt) x y i , λ v → isProp⊥ (p v) (q v) i
 
@@ -283,8 +283,8 @@ module _ where
                   ≡⟨ isEmbedding→Injection-x (transport (isEmbedding→Injection-x inl isEmbedding-inl r a)) (iso→isEmbedding (pathToIso (isEmbedding→Injection-x inl isEmbedding-inl r a))) p q ⟩
                 p ≡ q ∎
     in transport temp' temp
-  A-Unit-set A-set (inl r) (inr tt) p q = rec (inl≢inr p)
-  A-Unit-set A-set (inr tt) (inl b) p q = rec (inl≢inr (sym p))
+  A-Unit-set A-set (inl r) (inr tt) p q = empty-rec (inl≢inr p)
+  A-Unit-set A-set (inr tt) (inl b) p q = empty-rec (inl≢inr (sym p))
   A-Unit-set A-set (inr tt) (inr tt) p q =
     let temp = (isProp→isSet (isContr→isProp (tt , (λ y i → tt)))) in
     let temp' = (temp tt tt (transport (isEmbedding→Injection-x inr isEmbedding-inr tt tt) p) (transport (isEmbedding→Injection-x inr isEmbedding-inr tt tt) q)) in
