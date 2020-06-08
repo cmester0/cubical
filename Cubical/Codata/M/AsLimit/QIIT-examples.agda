@@ -46,11 +46,22 @@ data _∼_ {R : Type₀} : (_ _ : tree R) → Type₀ where
   ∼later : ∀ f g → (∀ n → f n ∼ g n) → node f ∼ node g
   ∼perm : ∀ f (g : ℕ → ℕ) → isEquiv g → node f ∼ node (f ∘ g)
 
-Quotient-Container : ∀ {ℓ} → (S : Container ℓ) → (G : S .fst → Set ℓ) → Container ℓ
-Quotient-Container (A , B) G = A , λ a → B a → G a
+-- Quotient-Container : ∀ {ℓ} → (S : Container ℓ) → (G : S .fst → Set ℓ) → Container ℓ
+-- Quotient-Container (A , B) G = A , λ a → B a → G a
+
+Quotient-Container : ∀ {ℓ} → (S : Container ℓ) → (R : {a : S .fst} → (Σ ((S .snd a) → (S .snd a) → Type ℓ) λ G → isEquiv G)) → Container ℓ
+Quotient-Container (A , B) G = A , λ a → let (R , e) = G {a = a} in B a / R
+
+-- Quotient-Container : ∀ {ℓ} → (S : Container ℓ) → (R : {a : S .fst} → Σ ((S .snd a) → (S .snd a)) λ G → isEquiv G) → Container ℓ
+-- Quotient-Container (A , B) G = A , λ a → let (R , e) = G {a = a} in B a / {!!}
+
+F : ∀ {ℓ} → (S : Container ℓ) → (R : {a : S .fst} → (Σ ((S .snd a) → (S .snd a) → Type ℓ) λ G → isEquiv G)) → Type ℓ → Type ℓ
+F S R = P₀ (Quotient-Container S R)
 
 P₀-Q : ∀ {ℓ} → (S : Container ℓ) → ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ) → Type ℓ → Type ℓ
 P₀-Q (A , B) ∼ₛ X = Σ[ a ∈ A ] ((B a → X) / ∼ₛ {a = a})
+
+jklag = {!!}
 
 P₁-Q :
   ∀ {ℓ} → (S : Container ℓ) → {X Y : Type ℓ}
@@ -89,6 +100,13 @@ poly-quot {ℓ} S R R-comm =
   Σ[ abs ∈ ({X : Set ℓ} → P₀ S X → P₀-Q S R X) ]
     ((∀ {X} → isSurjection (abs {X})) × ({X Y : Set ℓ} (f : X → Y) (x : P₀ S X) → abs (P₁ f x) ≡ P₁-Q S R R-comm f (abs x))) -- Is one of these properties not enought?
 
+poly-quot-constr : {ℓ : Level} (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → poly-quot S R R-comm
+poly-quot-constr S R R-comm =
+  (λ {(a , b) → a , [ b ]}) ,
+  (λ {(a , b) → ∥map∥ (λ {(g , p) → (a , g) , ((a , [ g ]) ≡⟨ ΣPathP (refl , p) ⟩ (a , b) ∎)}) ([]surjective b) }) ,
+  λ {f (a , b) → refl}
+
+
 -- postulate
 --   shift-quotient : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → Iso (QM S R R-comm) (P₀-Q S R (QM S R R-comm))
 
@@ -119,8 +137,6 @@ remove-double {A = A} = ∥rec∥ propTruncIsProp (λ (x : ∥ A ∥) → x)
 
 -- shift-quotient-iso : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → poly-quot S R R-comm → Iso (P₀-Q S R (QM S R R-comm)) (QM S R R-comm) 
 
-
-
 shift-quotient-pre : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → poly-quot S R R-comm → M S → P₀-Q S R (M S)
 shift-quotient-pre S@(A , B) R R-comm (abs , (comm , sqr)) x = abs (out-fun x)
 
@@ -128,12 +144,8 @@ shift-quotient-pre'2 : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ
 shift-quotient-pre'2 S@(A , B) R R-comm (abs , (comm , sqr)) x = {!!}
 
 shift-quotient-iso : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → poly-quot S R R-comm → Iso (Σ[ a ∈ S .fst ] (S .snd a → QM S R R-comm)) (QM S R R-comm)
-shift-quotient-iso S@(A , B) R R-comm (abs , (comm , sqr))  =
-  iso
-    (λ x → {!!})
-    {!!}
-    {!!}
-    {!!}
+shift-quotient-iso S@(A , B) R R-comm (abs , (comm , sqr))  = {!!}
+
 
 -- shift-quotient-iso : ∀ {ℓ} → (S : Container ℓ) → (R : ({X : Type ℓ} {a : S .fst} → (S .snd a → X) → (S .snd a → X) → Type ℓ)) → (R-comm : (∀ {X Y} → (f : X → Y) → {a : S .fst} → {x y : S .snd a → X} → R x y → R (f ∘ x) (f ∘ y))) → poly-quot S R R-comm → Iso (Σ[ a ∈ S .fst ] (S .snd a → QM S R R-comm)) (QM S R R-comm) 
 -- shift-quotient-iso S@(A , B) R R-comm (abs , (comm , sqr))  = -- (B (fst (x .fst (suc n))) → Wₙ' (A , B) R n)
@@ -269,22 +281,21 @@ shift-quotient-iso S@(A , B) R R-comm (abs , (comm , sqr))  =
 -- M→QM S R R-comm (abs , (sur , comm)) x = let temp' = comm abs {!!} in let temp = (abs (out-fun x)) in  Q-in-fun S R R-comm (abs {!!})
 
 
--- -- Weak bisimularity for delay monad
--- ∼perm' : {R : Type₀} {X : Type₀} {a : tree-S R .fst} → (tree-S R .snd a → X) → (tree-S R .snd a → X) → Type₀
--- ∼perm' {a = inr tt} f h = Σ[ g ∈ (ℕ → ℕ) ] (isEquiv g × (f ∘ g ≡ h))
--- ∼perm' {a = inl r} _ _ = Unit -- always true
+-- Weak bisimularity for delay monad
+∼perm' : {R : Type₀} {X : Type₀} {a : tree-S R .fst} → (tree-S R .snd a → X) → (tree-S R .snd a → X) → Type₀
+∼perm' {a = inr tt} f h = Σ[ g ∈ (ℕ → ℕ) ] (isEquiv g × (f ∘ g ≡ h))
+∼perm' {a = inl r} _ _ = Unit -- always true
 
--- ∼perm'-comm :  {R : Type₀} {X Y : Type₀} (f : X → Y) {a : tree-S R .fst} → {x y : tree-S R .snd a → X} → ∼perm' x y → ∼perm' (f ∘ x) (f ∘ y)
--- ∼perm'-comm f {a = inr tt} p = (p .fst) , ((proj₁ (p .snd)) , cong (λ a → f ∘ a) (proj₂ (p .snd)))
+∼perm'-comm :  {R : Type₀} {X Y : Type₀} (f : X → Y) {a : tree-S R .fst} → {x y : tree-S R .snd a → X} → ∼perm' x y → ∼perm' (f ∘ x) (f ∘ y)
+∼perm'-comm f {a = inr tt} p = (p .fst) , ((proj₁ (p .snd)) , cong (λ a → f ∘ a) (proj₂ (p .snd)))
 
--- ∼perm'-comm f {a = inl r} tt = tt
+∼perm'-comm f {a = inl r} tt = tt
 
--- asdf : ∀ {R} → poly-quot (tree-S R) ∼perm' ∼perm'-comm
--- asdf {R = R} =
---   (λ {(inl r , b) → inl r , [ b ] ; (inr tt , f) → inr tt , [ f ]}) ,
---   (λ {(inl r , b) → ∥map∥ (λ {(v , p) → (inl r , v) , (ΣPathP (refl , p))}) ([]surjective b)
---      ;(inr tt , f) → ∥map∥ (λ {(g , p) → (inr tt , g) , ((inr tt , [ g ]) ≡⟨ ΣPathP (refl , p) ⟩ (inr tt , f) ∎)}) ([]surjective f) }) ,
---   λ {f (inl r , b) → refl
---     ;f (inr tt , g) → refl}
+asdf : ∀ {R} → poly-quot (tree-S R) ∼perm' ∼perm'-comm
+asdf {R = R} = poly-quot-constr (tree-S R) ∼perm' ∼perm'-comm
+
+
+
+
 
 
